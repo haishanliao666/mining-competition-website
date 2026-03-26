@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多源固废协同激发下铁尾矿基胶结充填体的配比优化研究</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4A90E2',
+                        'primary-dark': '#3A7BC8',
+                        secondary: '#2A5F48',
+                        'secondary-light': '#3D7A5F',
+                        background: '#F5F7FA',
+                        surface: '#FFFFFF',
+                        text: '#333333',
+                        'text-light': '#666666',
+                        border: '#E0E0E0'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            color: #333333;
+            background: #F5F7FA;
+        }
+        .nav-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #E0E0E0;
+            z-index: 1000;
+        }
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2A5F48;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #E0E0E0;
+            border-radius: 4px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+        .btn-primary {
+            background: #4A90E2;
+            color: white;
+            padding: 12px 32px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover { background: #3A7BC8; }
+        .input-field {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid #E0E0E0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #4A90E2;
+        }
+        .highlight-line {
+            width: 60px;
+            height: 3px;
+            background: #4A90E2;
+            margin: 16px auto;
+        }
+        .mobile-menu { display: none; }
+        @media (max-width: 768px) {
+            .desktop-nav { display: none; }
+            .mobile-menu { display: block; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="nav-fixed">
+        <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+            <div class="text-lg font-bold" style="color: #2A5F48;">采矿工程学习模型</div>
+            <div class="desktop-nav flex items-center gap-8">
+                <a href="#home" class="text-sm hover:text-primary transition-colors">首页</a>
+                <a href="#video" class="text-sm hover:text-primary transition-colors">实验视频</a>
+                <a href="#theory" class="text-sm hover:text-primary transition-colors">理论学习</a>
+                <a href="#contact" class="text-sm hover:text-primary transition-colors">联系我们</a>
+            </div>
+            <button class="mobile-menu" onclick="toggleMobileMenu()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- 移动端菜单 -->
+    <div id="mobileMenu" class="fixed inset-0 bg-white z-50 hidden" style="top: 60px;">
+        <div class="p-6 flex flex-col gap-4">
+            <a href="#home" class="text-lg py-2 border-b" onclick="toggleMobileMenu()">首页</a>
+            <a href="#video" class="text-lg py-2 border-b" onclick="toggleMobileMenu()">实验视频</a>
+            <a href="#theory" class="text-lg py-2 border-b" onclick="toggleMobileMenu()">理论学习</a>
+            <a href="#contact" class="text-lg py-2 border-b" onclick="toggleMobileMenu()">联系我们</a>
+        </div>
+    </div>
+
+    <!-- 封面区 -->
+    <section id="home" class="pt-24 pb-16 relative" style="background-image: url('./assets/images/bg.jpg'); background-size: cover; background-position: center;">
+        <div class="absolute inset-0 bg-black/50"></div>
+        <div class="max-w-4xl mx-auto px-6 text-center text-white relative z-10">
+            <h1 class="text-3xl md:text-4xl font-bold mb-6 leading-tight">
+                多源固废协同激发下铁尾矿基胶结充填体的配比优化研究
+            </h1>
+            <p class="text-lg mb-2">全国采矿工程专业竞赛 · 学习模型赛道</p>
+            <p class="text-lg mb-8">福州大学采矿2班队</p>
+            <p class="text-base">指导老师：赖汉江、刘青灵</p>
+        </div>
+    </section>
+
+    <!-- 项目背景与意义 -->
+    <section id="background" class="py-16 bg-white">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="section-title">项目背景与意义</h2>
+            <div class="highlight-line"></div>
+            
+            <!-- 国家政策 -->
+            <div class="mb-12">
+                <h3 class="text-xl font-bold mb-6" style="color: #2A5F48;">国家政策导向</h3>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="card">
+                        <h4 class="font-bold mb-3 text-primary">
+                            <a href="./assets/pdf/十四五原材料工业发展规划.pdf" target="_blank" class="hover:underline cursor-pointer" title="点击打开PDF文件">《"十四五"原材料工业发展规划》</a>
+                        </h4>
+                        <p class="text-sm text-text-light">明确提出推进尾矿等大宗固废综合利用，推动绿色矿山建设</p>
+                    </div>
+                    <div class="card">
+                        <h4 class="font-bold mb-3 text-primary">
+                            <a href="./assets/pdf/大宗固体废弃物综合利用指导意见.pdf" target="_blank" class="hover:underline cursor-pointer" title="点击打开PDF文件">《关于"十四五"大宗固体废弃物综合利用的指导意见》</a>
+                        </h4>
+                        <p class="text-sm text-text-light">要求到2025年，新增大宗固废综合利用率达到60%</p>
+                    </div>
+                    <div class="card">
+                        <h4 class="font-bold mb-3 text-primary">
+                            <a href="./assets/pdf/绿色矿山建设评价指标.pdf" target="_blank" class="hover:underline cursor-pointer" title="点击打开PDF文件">《绿色矿山建设评价指标》</a>
+                        </h4>
+                        <p class="text-sm text-text-light">将尾矿综合利用列为绿色矿山建设的重要评价指标</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 行业痛点 -->
+            <div class="mb-12">
+                <h3 class="text-xl font-bold mb-6" style="color: #2A5F48;">行业痛点分析</h3>
+                <div class="grid md:grid-cols-4 gap-4">
+                    <div class="card text-center">
+                        <div class="text-2xl font-bold text-primary mb-2">15亿吨+</div>
+                        <p class="text-sm text-text-light">我国铁尾矿年排放量巨大，堆存量持续增长</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-2xl font-bold text-primary mb-2">土地占用</div>
+                        <p class="text-sm text-text-light">尾矿库占用大量土地资源，存在溃坝风险</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-2xl font-bold text-primary mb-2">环境污染</div>
+                        <p class="text-sm text-text-light">重金属渗漏、粉尘飞扬等环境问题突出</p>
+                    </div>
+                    <div class="card text-center">
+                        <div class="text-2xl font-bold text-primary mb-2">资源浪费</div>
+                        <p class="text-sm text-text-light">尾矿中仍含有可回收的有用矿物资源</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 研究目标 -->
+            <div class="mb-12">
+                <h3 class="text-xl font-bold mb-6" style="color: #2A5F48;">项目研究目标</h3>
+                <div class="card">
+                    <ul class="space-y-4">
+                        <li class="flex items-start gap-3">
+                            <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm flex-shrink-0">1</span>
+                            <span>探究多源固废协同激发机理</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm flex-shrink-0">2</span>
+                            <span>建立铁尾矿基胶结充填体强度预测模型</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm flex-shrink-0">3</span>
+                            <span>优化充填材料配比方案</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-sm flex-shrink-0">4</span>
+                            <span>评估充填体长期服役性能</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 创新点 -->
+            <div>
+                <h3 class="text-xl font-bold mb-6" style="color: #2A5F48;">项目创新点</h3>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="card border-l-4" style="border-left-color: #4A90E2;">
+                        <h4 class="font-bold mb-2">创新点一</h4>
+                        <p class="text-text-light">靶向研究细粒铁尾矿泥，填补技术空白</p>
+                    </div>
+                    <div class="card border-l-4" style="border-left-color: #4A90E2;">
+                        <h4 class="font-bold mb-2">创新点二</h4>
+                        <p class="text-text-light">构建多固废协同体系，实现一废多治</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 理论学习中心 -->
+    <section id="theory" class="py-16" style="background: #F5F7FA;">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="section-title">理论学习中心</h2>
+            <div class="highlight-line"></div>
+            
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="card">
+                    <h3 class="font-bold mb-3" style="color: #2A5F48;">铁尾矿基本性质</h3>
+                    <p class="text-sm text-text-light mb-4">了解铁尾矿的来源、化学组成、矿物组成、物理性质及活性特征</p>
+                    <div class="text-xs text-primary">3个核心公式</div>
+                </div>
+                <div class="card">
+                    <h3 class="font-bold mb-3" style="color: #2A5F48;">胶结充填理论基础</h3>
+                    <p class="text-sm text-text-light mb-4">掌握水化硬化机理、强度形成机理、养护条件影响及流变理论</p>
+                    <div class="text-xs text-primary">3个核心公式</div>
+                </div>
+                <div class="card">
+                    <h3 class="font-bold mb-3" style="color: #2A5F48;">配比设计方法</h3>
+                    <p class="text-sm text-text-light mb-4">学习正交试验设计、极差分析、单因素优化及多固废协同配比</p>
+                    <div class="text-xs text-primary">3个核心公式</div>
+                </div>
+                <div class="card">
+                    <h3 class="font-bold mb-3" style="color: #2A5F48;">性能测试与评价</h3>
+                    <p class="text-sm text-text-light mb-4">掌握工作性能、力学性能、耐久性能测试方法及综合评价体系</p>
+                    <div class="text-xs text-primary">4个核心公式</div>
+                </div>
+                <div class="card md:col-span-2">
+                    <h3 class="font-bold mb-3" style="color: #2A5F48;">工程应用与展望</h3>
+                    <p class="text-sm text-text-light mb-4">了解应用场景、产业现状、技术瓶颈、发展趋势及环保经济效益</p>
+                    <div class="text-xs text-primary">3个核心公式</div>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <a href="study-center.html" class="btn-primary inline-block">进入理论学习中心</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 实验演示视频 -->
+    <section id="video" class="py-16 bg-white">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="section-title">实验演示视频</h2>
+            <div class="highlight-line"></div>
+            
+            <div class="card mb-6">
+                <div class="mb-4">
+                    <h3 class="text-xl font-bold mb-2" style="color: #2A5F48;">高掺量铁尾矿基全固废胶凝材料制备实验流程</h3>
+                    <p class="text-text-light">完整展示6步实验流程的动画演示，从铁尾矿机械活化粉磨到性能测试与微观表征</p>
+                </div>
+                <div class="relative" style="padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 8px;">
+                    <video 
+                        controls 
+                        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                        poster="./assets/images/video-poster.jpg">
+                        <source src="./assets/videos/experiment-process.mp4" type="video/mp4">
+                        您的浏览器不支持视频播放
+                    </video>
+                </div>
+                <div class="flex gap-2 flex-wrap mt-4">
+                    <span class="px-3 py-1 text-xs bg-primary/10 text-primary rounded">1080P高清</span>
+                    <span class="px-3 py-1 text-xs bg-primary/10 text-primary rounded">6步完整流程</span>
+                    <span class="px-3 py-1 text-xs bg-primary/10 text-primary rounded">动画演示</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 虚拟仿真实验 -->
+    <section class="py-16" style="background: #F5F7FA;">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="section-title">虚拟仿真实验</h2>
+            <div class="highlight-line"></div>
+            
+            <div class="card mb-6">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                        <h3 class="text-xl font-bold mb-3" style="color: #2A5F48;">高掺量铁尾矿基全固废胶凝材料制备及水化机理</h3>
+                        <p class="text-text-light mb-4">完整模拟6步实验流程：铁尾矿机械活化粉磨、原材料称量与配料、胶凝材料混料与浆体制备、试模浇筑与振捣成型、标准养护与终止水化、性能测试与微观表征</p>
+                        <div class="flex gap-2 flex-wrap">
+                            <span class="px-3 py-1 text-xs bg-primary/10 text-primary rounded">6步完整流程</span>
+                            <span class="px-3 py-1 text-xs bg-primary/10 text-primary rounded">7组标准试验</span>
+                            <span class="px-3 py-1 text-xs bg-primary/10 text-primary rounded">3D可视化</span>
+                            <span class="px-3 py-1 text-xs bg-primary/10 text-primary rounded">实验报告生成</span>
+                        </div>
+                    </div>
+                    <a href="virtual-experiment-full.html" class="btn-primary" style="padding: 12px 16px !important; letter-spacing: 4px !important; width: auto !important; display: inline-block !important; white-space: nowrap !important;">进入实验</a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div>
+                        <h3 class="text-xl font-bold mb-3" style="color: #2A5F48;">微观结构3D可视化</h3>
+                        <p class="text-text-light mb-4">基于Three.js的交互式3D可视化，展示铁尾矿基胶结充填体在3d/7d/28d龄期的微观结构演变</p>
+                        <div class="flex gap-2 flex-wrap">
+                            <span class="px-3 py-1 text-xs bg-secondary/10 text-secondary rounded">Three.js 3D</span>
+                            <span class="px-3 py-1 text-xs bg-secondary/10 text-secondary rounded">3d/7d/28d龄期</span>
+                            <span class="px-3 py-1 text-xs bg-secondary/10 text-secondary rounded">交互式探索</span>
+                        </div>
+                    </div>
+                    <a href="microstructure-3d.html" class="btn-primary" style="background: #2A5F48;">探索微观世界</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 试验数据可视化 -->
+    <section id="visualization" class="py-16 bg-white">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="section-title">试验数据可视化</h2>
+            <div class="highlight-line"></div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="card">
+                    <h3 class="font-bold mb-4" style="color: #2A5F48;">配比-强度变化曲线</h3>
+                    <div id="chart1" style="height: 300px;"></div>
+                </div>
+                <div class="card">
+                    <h3 class="font-bold mb-4" style="color: #2A5F48;">固废掺量影响分析</h3>
+                    <div id="chart2" style="height: 300px;"></div>
+                </div>
+                <div class="card">
+                    <h3 class="font-bold mb-4" style="color: #2A5F48;">长期服役性能</h3>
+                    <div id="chart3" style="height: 300px;"></div>
+                </div>
+                <div class="card">
+                    <h3 class="font-bold mb-4" style="color: #2A5F48;">微观形貌对比</h3>
+                    <div id="chart4" style="height: 300px;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 资料下载 -->
+    <section id="downloads" class="py-16" style="background: #F5F7FA;">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="section-title">资料下载</h2>
+            <div class="highlight-line"></div>
+            
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="card">
+                    <h3 class="font-bold mb-2">项目研究报告</h3>
+                    <p class="text-sm text-text-light mb-4">完整的研究报告文档</p>
+                    <button class="text-primary text-sm hover:underline">下载</button>
+                </div>
+                <div class="card">
+                    <h3 class="font-bold mb-2">实验数据</h3>
+                    <p class="text-sm text-text-light mb-4">配比试验原始数据</p>
+                    <button class="text-primary text-sm hover:underline">下载</button>
+                </div>
+                <div class="card">
+                    <h3 class="font-bold mb-2">参考文献</h3>
+                    <p class="text-sm text-text-light mb-4">相关学术论文列表</p>
+                    <button class="text-primary text-sm hover:underline">下载</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 联系我们 -->
+    <section id="contact" class="py-16 bg-white">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="section-title">联系我们</h2>
+            <div class="highlight-line"></div>
+            <p class="text-text-light">福州大学采矿工程系</p>
+            <p class="text-text-light mt-2">指导老师：赖汉江、刘青灵</p>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="py-8 text-center text-sm text-text-light" style="background: #333; color: #999;">
+        <p>全国采矿工程专业竞赛 · 学习模型赛道</p>
+        <p class="mt-2">福州大学采矿2班队</p>
+    </footer>
+
+    <script>
+        // 移动端菜单切换
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // 初始化图表
+        document.addEventListener('DOMContentLoaded', function() {
+            // 图表1: 配比-强度变化曲线
+            const chart1 = echarts.init(document.getElementById('chart1'));
+            chart1.setOption({
+                xAxis: { type: 'category', data: ['1:4', '1:6', '1:8', '1:10', '1:12'] },
+                yAxis: { type: 'value', name: '强度(MPa)' },
+                series: [{
+                    data: [3.2, 2.8, 2.1, 1.5, 1.0],
+                    type: 'line',
+                    smooth: true,
+                    itemStyle: { color: '#4A90E2' }
+                }]
+            });
+
+            // 图表2: 固废掺量影响饼图
+            const chart2 = echarts.init(document.getElementById('chart2'));
+            chart2.setOption({
+                series: [{
+                    type: 'pie',
+                    data: [
+                        { value: 60, name: '铁尾矿' },
+                        { value: 20, name: '水泥' },
+                        { value: 15, name: '矿渣' },
+                        { value: 5, name: '石膏' }
+                    ],
+                    itemStyle: {
+                        color: function(params) {
+                            const colors = ['#4A90E2', '#2A5F48', '#5BA3E8', '#3D7A5F'];
+                            return colors[params.dataIndex];
+                        }
+                    }
+                }]
+            });
+
+            // 图表3: 长期服役性能
+            const chart3 = echarts.init(document.getElementById('chart3'));
+            chart3.setOption({
+                xAxis: { type: 'category', data: ['3d', '7d', '14d', '28d', '56d', '90d'] },
+                yAxis: { type: 'value', name: '强度(MPa)' },
+                series: [{
+                    data: [1.2, 1.8, 2.3, 2.8, 3.1, 3.3],
+                    type: 'line',
+                    itemStyle: { color: '#2A5F48' }
+                }]
+            });
+
+            // 图表4: 微观形貌对比
+            const chart4 = echarts.init(document.getElementById('chart4'));
+            chart4.setOption({
+                xAxis: { type: 'category', data: ['3d', '7d', '28d'] },
+                yAxis: { type: 'value', name: '孔隙率(%)' },
+                series: [{
+                    data: [35, 28, 22],
+                    type: 'bar',
+                    itemStyle: { color: '#4A90E2' }
+                }]
+            });
+
+            // 响应式
+            window.addEventListener('resize', function() {
+                chart1.resize();
+                chart2.resize();
+                chart3.resize();
+                chart4.resize();
+            });
+        });
+    </script>
+</body>
+</html>

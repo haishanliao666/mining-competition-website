@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>理论学习中心 - 铁尾矿基胶结充填体基础理论与关键技术</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- KaTeX CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    
+    <!-- KaTeX JS -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    
+    <script>
+        // 配置Tailwind主题色
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',      // 工业蓝
+                        'primary-light': '#4A85FF',
+                        'primary-dark': '#0E42D4',
+                        secondary: '#00B42A',     // 矿冶绿
+                        'secondary-light': '#33C255',
+                        'secondary-dark': '#009122',
+                        accent: '#1D2129',        // 深灰
+                        'accent-light': '#4E5969',
+                        'accent-dark': '#0A0C0F'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* 自定义样式 */
+        .study-container {
+            display: flex;
+            min-height: calc(100vh - 64px);
+        }
+        
+        /* 侧边栏样式 */
+        .sidebar {
+            width: 280px;
+            background: #f8f9fa;
+            border-right: 1px solid #e5e7eb;
+            position: fixed;
+            top: 64px;
+            left: 0;
+            bottom: 0;
+            overflow-y: auto;
+            z-index: 40;
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar-nav-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: #4b5563;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-nav-item:hover {
+            background: #e5e7eb;
+            color: #165DFF;
+        }
+        
+        .sidebar-nav-item.active {
+            background: #e8f0fe;
+            color: #165DFF;
+            border-left-color: #165DFF;
+            font-weight: 500;
+        }
+        
+        .sidebar-nav-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 主内容区样式 */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            margin-top: 64px;
+            padding: 40px;
+            background: #ffffff;
+            min-height: calc(100vh - 64px);
+        }
+        
+        /* 章节内容样式 */
+        .chapter-section {
+            margin-bottom: 32px;
+        }
+        
+        .chapter-section h3 {
+            color: #1D2129;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #165DFF;
+            display: inline-block;
+        }
+        
+        .chapter-section p {
+            color: #4b5563;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+        
+        .chapter-section ul, .chapter-section ol {
+            color: #4b5563;
+            line-height: 1.8;
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+        
+        .chapter-section li {
+            margin-bottom: 8px;
+        }
+        
+        .chapter-section table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+        }
+        
+        .chapter-section th,
+        .chapter-section td {
+            border: 1px solid #e5e7eb;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        .chapter-section th {
+            background: #f3f4f6;
+            font-weight: 600;
+            color: #1D2129;
+        }
+        
+        .chapter-section tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        /* 高亮样式 */
+        .highlight-number {
+            background: linear-gradient(135deg, #165DFF 0%, #00B42A 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+        
+        .highlight-term {
+            color: #165DFF;
+            font-weight: 600;
+            cursor: help;
+            border-bottom: 1px dashed #165DFF;
+            position: relative;
+        }
+        
+        .highlight-term:hover::after {
+            content: attr(data-term);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1D2129;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            z-index: 100;
+            margin-bottom: 8px;
+        }
+        
+        .info-box {
+            border-left: 4px solid #165DFF;
+            background: #f0f7ff;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        /* 公式区域样式 */
+        .formula-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 32px;
+        }
+        
+        .formula-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1D2129;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .formula-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #165DFF;
+            margin-right: 12px;
+            border-radius: 2px;
+        }
+        
+        .formula-item {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid #e5e7eb;
+            transition: box-shadow 0.2s;
+        }
+        
+        .formula-item:hover {
+            box-shadow: 0 4px 12px rgba(22, 93, 255, 0.1);
+        }
+        
+        .formula-name {
+            font-weight: 600;
+            color: #165DFF;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+        
+        .formula-latex {
+            background: #f3f4f6;
+            padding: 16px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            text-align: center;
+            overflow-x: auto;
+        }
+        
+        .formula-desc {
+            color: #6b7280;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        /* 配图区域样式 */
+        .image-section {
+            margin-top: 32px;
+        }
+        
+        .image-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .chapter-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .image-placeholder {
+            background: linear-gradient(135deg, #e5e7eb 0%, #f3f4f6 100%);
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 60px 40px;
+            color: #9ca3af;
+        }
+        
+        /* 移动端抽屉菜单 */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 80px;
+            left: 20px;
+            z-index: 50;
+            background: #165DFF;
+            color: white;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(22, 93, 255, 0.3);
+            cursor: pointer;
+        }
+        
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 64px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 45;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 80px 20px 40px;
+            }
+            
+            .mobile-menu-btn {
+                display: flex;
+            }
+            
+            .sidebar-overlay.show {
+                display: block;
+            }
+        }
+        
+        /* 顶部横幅 */
+        .page-banner {
+            background: linear-gradient(135deg, #165DFF 0%, #00B42A 100%);
+            color: white;
+            padding: 40px;
+            margin: -40px -40px 40px;
+            border-radius: 0 0 24px 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .page-banner {
+                margin: -80px -20px 40px;
+                padding: 30px 20px;
+            }
+        }
+        
+        /* 导航栏 */
+        .top-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 40px;
+        }
+        
+        .nav-logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #165DFF;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+        
+        .nav-link {
+            color: #4b5563;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .nav-link:hover {
+            color: #165DFF;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+        }
+        
+        /* KaTeX 公式样式优化 */
+        .katex {
+            font-size: 1.1em;
+        }
+        
+        .katex-display {
+            margin: 1em 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 顶部导航栏 -->
+    <nav class="top-nav">
+        <div class="nav-logo">理论学习中心</div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">返回首页</a>
+        </div>
+    </nav>
+    
+    <!-- 移动端菜单按钮 -->
+    <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleSidebar()">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+    </button>
+    
+    <!-- 侧边栏遮罩 -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    
+    <div class="study-container">
+        <!-- 左侧章节导航侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="font-bold text-gray-800 text-lg">章节导航</h2>
+                <p class="text-sm text-gray-500 mt-1">点击切换章节</p>
+            </div>
+            <nav id="chapterNav">
+                <!-- 章节导航项将通过JS动态生成 -->
+            </nav>
+            <div class="p-4 border-t border-gray-200 mt-auto">
+                <div class="text-xs text-gray-400">
+                    <p>系统学习铁尾矿基</p>
+                    <p>胶结充填体技术</p>
+                </div>
+            </div>
+        </aside>
+        
+        <!-- 右侧主内容区 -->
+        <main class="main-content">
+            <!-- 章节内容容器 -->
+            <div id="chapterContent">
+                <!-- 内容将通过JS动态加载 -->
+            </div>
+        </main>
+    </div>
+    
+    <!-- 数据配置文件 -->
+    <script src="data/study.js?v=5"></script>
+    
+    <script>
+        // ==========================================
+        // 全局变量
+        // ==========================================
+        let currentChapterIndex = 0;
+        let chapters = [];
+        
+        // ==========================================
+        // 初始化
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载章节数据
+            if (typeof STUDY_CHAPTERS !== 'undefined') {
+                chapters = STUDY_CHAPTERS;
+                renderChapterNav();
+                renderChapter(0);
+            } else {
+                console.error('STUDY_CHAPTERS 未定义');
+                document.getElementById('chapterContent').innerHTML = `
+                    <div class="text-center py-20">
+                        <p class="text-red-500">无法加载学习数据，请检查 data/study.js 文件</p>
+                    </div>
+                `;
+            }
+        });
+        
+        // ==========================================
+        // 渲染章节导航
+        // ==========================================
+        function renderChapterNav() {
+            const nav = document.getElementById('chapterNav');
+            let html = '';
+            
+            chapters.forEach((chapter, index) => {
+                const isActive = index === 0 ? 'active' : '';
+                html += `
+                    <div class="sidebar-nav-item ${isActive}" data-index="${index}" onclick="switchChapter(${index})">
+                        <span class="sidebar-nav-icon">${chapter.title.charAt(0)}</span>
+                        <span class="text-sm">${chapter.title.substring(2)}</span>
+                    </div>
+                `;
+            });
+            
+            nav.innerHTML = html;
+        }
+        
+        // ==========================================
+        // 切换章节
+        // ==========================================
+        function switchChapter(index) {
+            if (index < 0 || index >= chapters.length) return;
+            
+            currentChapterIndex = index;
+            
+            // 更新导航状态
+            const navItems = document.querySelectorAll('.sidebar-nav-item');
+            navItems.forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+            
+            // 渲染章节内容
+            renderChapter(index);
+            
+            // 移动端关闭侧边栏
+            if (window.innerWidth <= 1024) {
+                toggleSidebar();
+            }
+            
+            // 滚动到顶部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // ==========================================
+        // 渲染章节内容
+        // ==========================================
+        function renderChapter(index) {
+            const chapter = chapters[index];
+            const container = document.getElementById('chapterContent');
+            
+            // 构建公式HTML
+            let formulasHtml = '';
+            if (chapter.formulas && chapter.formulas.length > 0) {
+                formulasHtml = `
+                    <div class="formula-section">
+                        <h3 class="formula-title">核心公式</h3>
+                        ${chapter.formulas.map(formula => `
+                            <div class="formula-item">
+                                <div class="formula-name">${formula.name}</div>
+                                <div class="formula-latex">\\[${formula.latex}\\]</div>
+                                <div class="formula-desc">${formula.desc}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            // 构建配图HTML
+            let imageHtml = '';
+            if (chapter.imgUrl) {
+                imageHtml = `
+                    <div class="image-section">
+                        <h3 class="formula-title">配图说明</h3>
+                        <div class="image-container">
+                            <img src="${chapter.imgUrl}" alt="${chapter.title}配图" class="chapter-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div class="image-placeholder" style="display: none;">
+                                <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <p class="text-gray-500">${chapter.title}配图</p>
+                                <p class="text-sm text-gray-400 mt-2">图片路径：${chapter.imgUrl}</p>
+                                <p class="text-xs text-gray-400 mt-1">（请准备对应图片文件）</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 组装完整内容
+            container.innerHTML = `
+                <article class="chapter-article">
+                    <header class="mb-8">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-4">${chapter.title}</h2>
+                        <div class="flex items-center gap-4 text-sm text-gray-500">
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                </svg>
+                                章节 ${index + 1} / ${chapters.length}
+                            </span>
+                            <span class="flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                ${chapter.formulas ? chapter.formulas.length : 0} 个核心公式
+                            </span>
+                        </div>
+                    </header>
+                    
+                    <div class="chapter-body">
+                        ${chapter.content}
+                    </div>
+                    
+                    ${formulasHtml}
+                    ${imageHtml}
+                </article>
+                
+                <!-- 章节导航按钮 -->
+                <div class="flex justify-between mt-12 pt-8 border-t border-gray-200">
+                    <button 
+                        onclick="switchChapter(${index - 1})" 
+                        class="px-6 py-3 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition-colors ${index === 0 ? 'invisible' : ''}"
+                    >
+                        ← 上一章
+                    </button>
+                    <button 
+                        onclick="switchChapter(${index + 1})" 
+                        class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors ${index === chapters.length - 1 ? 'invisible' : ''}"
+                    >
+                        下一章 →
+                    </button>
+                </div>
+            `;
+            
+            // 渲染KaTeX公式
+            if (typeof renderMathInElement !== 'undefined') {
+                renderMathInElement(container, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '\\[', right: '\\]', display: true},
+                        {left: '\\(', right: '\\)', display: false},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    throwOnError: false
+                });
+            }
+        }
+        
+        // ==========================================
+        // 移动端侧边栏切换
+        // ==========================================
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('show');
+        }
+        
+        // ==========================================
+        // 滚动监听 - 高亮当前阅读章节
+        // ==========================================
+        let scrollTimeout;
+        window.addEventListener('scroll', function() {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(function() {
+                // 可以在这里添加滚动时更新导航高亮的逻辑
+            }, 100);
+        });
+        
+        // ==========================================
+        // 键盘导航
+        // ==========================================
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft' && currentChapterIndex > 0) {
+                switchChapter(currentChapterIndex - 1);
+            } else if (e.key === 'ArrowRight' && currentChapterIndex < chapters.length - 1) {
+                switchChapter(currentChapterIndex + 1);
+            }
+        });
+    </script>
+</body>
+</html>

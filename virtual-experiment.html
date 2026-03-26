@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>铁尾矿粉固化充填材料(SITP)全流程虚拟仿真实验</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* 工业风背景纹理 */
+        .industrial-bg {
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(22, 119, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(64, 169, 255, 0.08) 0%, transparent 50%),
+                linear-gradient(180deg, rgba(15, 52, 96, 0.3) 0%, rgba(26, 26, 46, 0.5) 100%);
+        }
+        
+        /* 科研蓝主色调 */
+        .sci-blue { color: #165DFF; }
+        .sci-blue-bg { background-color: #165DFF; }
+        .sci-blue-border { border-color: #165DFF; }
+        
+        /* 工业灰 */
+        .industrial-gray { color: #6B7280; }
+        .industrial-gray-bg { background-color: #6B7280; }
+        
+        /* 进度条 */
+        .progress-bar {
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #165DFF 0%, #40A9FF 100%);
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(22, 93, 255, 0.5);
+        }
+        
+        /* 步骤指示器 */
+        .step-indicator {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        
+        .step-indicator.active {
+            background: #165DFF;
+            border-color: #40A9FF;
+            box-shadow: 0 0 20px rgba(22, 93, 255, 0.6);
+        }
+        
+        .step-indicator.completed {
+            background: #52C41A;
+            border-color: #73D13D;
+        }
+        
+        /* 动画区域 */
+        .animation-stage {
+            background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid rgba(22, 93, 255, 0.3);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .animation-stage::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #165DFF, transparent);
+        }
+        
+        /* 参数标注样式 */
+        .param-label {
+            background: rgba(22, 93, 255, 0.9);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+        }
+        
+        .param-value {
+            background: rgba(255,255,255,0.95);
+            color: #1a1a2e;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        /* 原料卡片 */
+        .material-card {
+            background: linear-gradient(145deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%);
+            border: 1px solid rgba(22, 93, 255, 0.2);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .material-card:hover {
+            border-color: rgba(22, 93, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(22, 93, 255, 0.2);
+        }
+        
+        /* 试验矩阵表格 */
+        .matrix-table {
+            border-collapse: separate;
+            border-spacing: 2px;
+        }
+        
+        .matrix-table th {
+            background: rgba(22, 93, 255, 0.3);
+            color: white;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .matrix-table td {
+            background: rgba(255,255,255,0.05);
+            color: rgba(255,255,255,0.9);
+            padding: 8px 12px;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .matrix-table td.highlight {
+            background: rgba(22, 93, 255, 0.4);
+            color: white;
+            font-weight: 600;
+        }
+        
+        /* 分屏容器 */
+        .split-screen {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            height: 100%;
+        }
+        
+        .screen-panel {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(22, 93, 255, 0.2);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .screen-label {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(22, 93, 255, 0.9);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            z-index: 10;
+        }
+        
+        /* 振动动画 */
+        @keyframes vibrate {
+            0%, 100% { transform: translateX(0); }
+            10% { transform: translateX(-2px) rotate(-0.5deg); }
+            20% { transform: translateX(2px) rotate(0.5deg); }
+            30% { transform: translateX(-2px) rotate(-0.5deg); }
+            40% { transform: translateX(2px) rotate(0.5deg); }
+            50% { transform: translateX(-1px) rotate(-0.3deg); }
+            60% { transform: translateX(1px) rotate(0.3deg); }
+            70% { transform: translateX(-1px) rotate(-0.3deg); }
+            80% { transform: translateX(1px) rotate(0.3deg); }
+            90% { transform: translateX(-0.5px) rotate(-0.1deg); }
+        }
+        
+        .vibrating {
+            animation: vibrate 0.5s ease-in-out infinite;
+        }
+        
+        /* 粒子动画 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(180deg); }
+        }
+        
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        /* 搅拌机动画 */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .rotating {
+            animation: rotate 0.5s linear infinite;
+        }
+        
+        /* 浆体流动 */
+        @keyframes flow {
+            0% { height: 0; opacity: 0; }
+            20% { opacity: 1; }
+            100% { height: 100%; opacity: 1; }
+        }
+        
+        /* 坍落动画 */
+        @keyframes slump {
+            0% { transform: scaleY(1); }
+            30% { transform: scaleY(0.6) scaleX(1.3); }
+            60% { transform: scaleY(0.5) scaleX(1.5); }
+            100% { transform: scaleY(0.45) scaleX(1.6); }
+        }
+        
+        /* 压力加载 */
+        @keyframes compress {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(80px); }
+        }
+        
+        /* 裂缝动画 */
+        @keyframes crack {
+            0% { stroke-dashoffset: 100; opacity: 0; }
+            50% { opacity: 1; }
+            100% { stroke-dashoffset: 0; opacity: 1; }
+        }
+        
+        /* 数据曲线容器 */
+        .chart-container {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(22, 93, 255, 0.3);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        /* 按钮样式 */
+        .btn-primary {
+            background: linear-gradient(135deg, #165DFF 0%, #40A9FF 100%);
+            color: white;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(22, 93, 255, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(22, 93, 255, 0.6);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* 对比卡片 */
+        .compare-card {
+            background: linear-gradient(145deg, rgba(30,41,59,0.9) 0%, rgba(15,23,42,0.95) 100%);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .compare-card.vibration {
+            border-color: #165DFF;
+        }
+        
+        .compare-card.normal {
+            border-color: #6B7280;
+        }
+        
+        .compare-card.cement {
+            border-color: #8B5CF6;
+        }
+        
+        /* 强度指示器 */
+        .strength-bar {
+            height: 24px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .strength-fill {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .strength-fill.high { background: linear-gradient(90deg, #52C41A, #73D13D); }
+        .strength-fill.medium { background: linear-gradient(90deg, #FAAD14, #FFC53D); }
+        .strength-fill.low { background: linear-gradient(90deg, #F5222D, #FF4D4F); }
+        
+        /* 结论高亮 */
+        .conclusion-highlight {
+            background: linear-gradient(135deg, rgba(22, 93, 255, 0.2) 0%, rgba(64, 169, 255, 0.1) 100%);
+            border-left: 4px solid #165DFF;
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        /* 网格背景 */
+        .grid-bg {
+            background-image: 
+                linear-gradient(rgba(22, 93, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(22, 93, 255, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        /* 时间轴 */
+        .timeline {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: rgba(255,255,255,0.1);
+            z-index: 0;
+        }
+        
+        .timeline-point {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            position: relative;
+            z-index: 1;
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-point.active {
+            background: #165DFF;
+            box-shadow: 0 0 12px rgba(22, 93, 255, 0.8);
+        }
+        
+        /* 数值变化动画 */
+        @keyframes countUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .value-animate {
+            animation: countUp 0.5s ease forwards;
+        }
+        
+        /* 扫描线效果 */
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        
+        .scanline::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(180deg, transparent, rgba(22, 93, 255, 0.1), transparent);
+            animation: scanline 4s linear infinite;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="industrial-bg text-white">
+    <!-- 顶部导航 -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-blue-500/20">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white">SITP虚拟仿真实验</h1>
+                        <p class="text-xs text-blue-300">铁尾矿粉固化充填材料全流程仿真</p>
+                    </div>
+                </div>
+                <a href="index.html" class="text-sm text-gray-400 hover:text-white transition-colors">返回首页</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="pt-24 pb-8 px-6">
+        <div class="max-w-7xl mx-auto">
+            <!-- 进度指示器 -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div id="step-1-ind" class="step-indicator active">1</div>
+                        <div class="w-12 h-0.5 bg-gray-700">
+                            <div id="line-1" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div id="step-2-ind" class="step-indicator">2</div>
+                        <div class="w-12 h-0.5 bg-gray-700">
+                            <div id="line-2" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div id="step-3-ind" class="step-indicator">3</div>
+                        <div class="w-12 h-0.5 bg-gray-700">
+                            <div id="line-3" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div id="step-4-ind" class="step-indicator">4</div>
+                        <div class="w-12 h-0.5 bg-gray-700">
+                            <div id="line-4" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div id="step-5-ind" class="step-indicator">5</div>
+                        <div class="w-12 h-0.5 bg-gray-700">
+                            <div id="line-5" class="h-full bg-blue-500 transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <div id="step-6-ind" class="step-indicator">6</div>
+                    </div>
+                    <div class="text-sm text-gray-400">
+                        步骤 <span id="current-step-num">1</span> / 6
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill" style="width: 16.67%"></div>
+                </div>
+            </div>
+
+            <!-- 场景内容区 -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 左侧：动画展示区 -->
+                <div class="lg:col-span-2">
+                    <div class="animation-stage h-[500px] grid-bg scanline relative" id="animation-container">
+                        <!-- 场景1: 原料配比设计 -->
+                        <div id="scene-1" class="scene-content absolute inset-0 p-6">
+                            <div class="h-full flex flex-col">
+                                <h3 class="text-lg font-bold text-blue-400 mb-4">原料与配比设计</h3>
+                                
+                                <!-- 原料展示 -->
+                                <div class="grid grid-cols-4 gap-4 mb-6">
+                                    <div class="material-card p-4 text-center">
+                                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-gray-400 to-gray-600 flex items-center justify-center">
+                                            <span class="text-2xl"></span>
+                                        </div>
+                                        <h4 class="text-sm font-semibold text-white mb-1">高硅铁尾矿粉</h4>
+                                        <div class="text-xs text-gray-400 space-y-1">
+                                            <div>SiO₂: <span class="text-blue-400 font-mono">67.32%</span></div>
+                                            <div>Fe₂O₃: <span class="text-blue-400 font-mono">9.79%</span></div>
+                                            <div>Al₂O₃: <span class="text-blue-400 font-mono">8.44%</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="material-card p-4 text-center">
+                                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+                                            <span class="text-2xl"></span>
+                                        </div>
+                                        <h4 class="text-sm font-semibold text-white mb-1">TF型固化剂</h4>
+                                        <div class="text-xs text-gray-400">自主研发</div>
+                                        <div class="text-xs text-blue-400 mt-1">多固废协同激发</div>
+                                    </div>
+                                    <div class="material-card p-4 text-center">
+                                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-slate-400 to-slate-600 flex items-center justify-center">
+                                            <span class="text-2xl"></span>
+                                        </div>
+                                        <h4 class="text-sm font-semibold text-white mb-1">P·O 42.5水泥</h4>
+                                        <div class="text-xs text-gray-400">普通硅酸盐</div>
+                                        <div class="text-xs text-blue-400 mt-1">GB 175-2007</div>
+                                    </div>
+                                    <div class="material-card p-4 text-center">
+                                        <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center">
+                                            <span class="text-2xl"></span>
+                                        </div>
+                                        <h4 class="text-sm font-semibold text-white mb-1">自来水</h4>
+                                        <div class="text-xs text-gray-400">试验室用水</div>
+                                        <div class="text-xs text-blue-400 mt-1">JGJ 63-2006</div>
+                                    </div>
+                                </div>
+
+                                <!-- 试验矩阵 -->
+                                <div class="flex-1 bg-slate-800/50 rounded-lg p-4">
+                                    <h4 class="text-sm font-semibold text-blue-400 mb-3">3因素3水平正交试验设计</h4>
+                                    <table class="matrix-table w-full">
+                                        <thead>
+                                            <tr>
+                                                <th>工况</th>
+                                                <th>固化剂掺量</th>
+                                                <th>水耗</th>
+                                                <th>搅拌方式</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td class="highlight">1-3</td>
+                                                <td>8%</td>
+                                                <td>30%/40%/50%</td>
+                                                <td>振动搅拌</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="highlight">4-6</td>
+                                                <td>12%</td>
+                                                <td>30%/40%/50%</td>
+                                                <td>振动搅拌</td>
+                                            </tr>
+                                            <tr>
+                                                <td class="highlight">7-9</td>
+                                                <td>16%</td>
+                                                <td>30%/40%/50%</td>
+                                                <td>振动搅拌</td>
+                                            </tr>
+                                            <tr>
+                                                <td>对照组1</td>
+                                                <td>8%</td>
+                                                <td>40%</td>
+                                                <td>普通搅拌</td>
+                                            </tr>
+                                            <tr>
+                                                <td>对照组2</td>
+                                                <td>-</td>
+                                                <td>40%</td>
+                                                <td>P·O 42.5水泥</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 场景2: 振动搅拌工艺 -->
+                        <div id="scene-2" class="scene-content absolute inset-0 p-6 hidden">
+                            <div class="h-full flex flex-col">
+                                <h3 class="text-lg font-bold text-blue-400 mb-4">振动搅拌工艺仿真</h3>
+                                <div class="split-screen flex-1">
+                                    <!-- 宏观视角 -->
+                                    <div class="screen-panel p-4" id="macro-panel">
+                                        <div class="screen-label">宏观视角 · DT15振动搅拌机</div>
+                                        <div class="h-full flex flex-col items-center justify-center">
+                                            <!-- 搅拌机SVG -->
+                                            <svg width="200" height="240" viewBox="0 0 200 240" id="mixer-svg">
+                                                <!-- 机架 -->
+                                                <rect x="60" y="200" width="80" height="30" fill="#4B5563"/>
+                                                <rect x="40" y="190" width="120" height="15" fill="#6B7280"/>
+                                                <!-- 搅拌桶 -->
+                                                <path d="M50 80 L150 80 L140 180 L60 180 Z" fill="url(#mixerGradient)" stroke="#374151" stroke-width="2"/>
+                                                <!-- 浆体 -->
+                                                <path id="slurry-macro" d="M55 120 L145 120 L142 175 L58 175 Z" fill="#8B7355" opacity="0"/>
+                                                <!-- 搅拌叶片 -->
+                                                <g id="blades-macro" transform="translate(100, 130)">
+                                                    <ellipse cx="0" cy="0" rx="35" ry="8" fill="#374151"/>
+                                                    <rect x="-30" y="-3" width="60" height="6" fill="#4B5563"/>
+                                                </g>
+                                                <!-- 振动标识 -->
+                                                <g id="vibration-waves" opacity="0">
+                                                    <path d="M160 100 Q170 110 160 120" stroke="#165DFF" stroke-width="2" fill="none"/>
+                                                    <path d="M165 95 Q180 110 165 125" stroke="#165DFF" stroke-width="2" fill="none"/>
+                                                </g>
+                                                <defs>
+                                                    <linearGradient id="mixerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                        <stop offset="0%" style="stop-color:#9CA3AF"/>
+                                                        <stop offset="100%" style="stop-color:#4B5563"/>
+                                                    </linearGradient>
+                                                </defs>
+                                            </svg>
+                                            <!-- 工艺参数 -->
+                                            <div class="mt-4 grid grid-cols-3 gap-3 text-center">
+                                                <div class="bg-slate-700/50 rounded px-3 py-2">
+                                                    <div class="text-xs text-gray-400">干混时间</div>
+                                                    <div class="text-sm font-mono text-blue-400">5s</div>
+                                                </div>
+                                                <div class="bg-slate-700/50 rounded px-3 py-2">
+                                                    <div class="text-xs text-gray-400">加水时间</div>
+                                                    <div class="text-sm font-mono text-blue-400">10s</div>
+                                                </div>
+                                                <div class="bg-slate-700/50 rounded px-3 py-2">
+                                                    <div class="text-xs text-gray-400">总时长</div>
+                                                    <div class="text-sm font-mono text-blue-400">120s</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 微观视角 -->
+                                    <div class="screen-panel p-4" id="micro-panel">
+                                        <div class="screen-label">微观视角 · 颗粒分散机理</div>
+                                        <div class="h-full relative" id="particle-container">
+                                            <!-- 颗粒动画容器 -->
+                                            <canvas id="particle-canvas" class="w-full h-full"></canvas>
+                                            <!-- 对比标签 -->
+                                            <div class="absolute bottom-4 left-4 right-4 flex justify-between">
+                                                <div class="bg-red-500/80 text-white text-xs px-3 py-1 rounded">普通搅拌：颗粒团聚</div>
+                                                <div class="bg-blue-500/80 text-white text-xs px-3 py-1 rounded">振动搅拌：均匀分散</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 场景3: 新拌浆体性能测试 -->
+                        <div id="scene-3" class="scene-content absolute inset-0 p-6 hidden">
+                            <div class="h-full flex flex-col">
+                                <h3 class="text-lg font-bold text-blue-400 mb-4">新拌浆体性能测试</h3>
+                                <div class="flex-1 flex gap-6">
+                                    <!-- 扩展度测试 -->
+                                    <div class="flex-1 bg-slate-800/50 rounded-lg p-4">
+                                        <h4 class="text-sm font-semibold text-blue-400 mb-3">扩展度测试（坍落筒法）</h4>
+                                        <div class="relative h-64 flex items-center justify-center">
+                                            <!-- 测试平台 -->
+                                            <div class="absolute inset-0 bg-gray-700/30 rounded grid-bg"></div>
+                                            <!-- 坍落筒 -->
+                                            <div id="slump-cone" class="relative transition-all duration-1000">
+                                                <div class="w-16 h-32 border-2 border-gray-400 bg-gray-600/50 mx-auto relative">
+                                                    <div class="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-gray-400 whitespace-nowrap">
+                                                        φ75mm×150mm
+                                                    </div>
+                                                </div>
+                                                <!-- 浆体 -->
+                                                <div id="slurry-pile" class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 bg-amber-700/80 rounded-full transition-all duration-1500 opacity-0"></div>
+                                            </div>
+                                            <!-- 测量尺 -->
+                                            <div id="ruler" class="absolute bottom-8 opacity-0 transition-opacity duration-500">
+                                                <div class="w-80 h-6 border border-yellow-500 bg-yellow-500/20 flex items-center">
+                                                    <div class="flex-1 border-r border-yellow-500/50 h-3"></div>
+                                                    <div class="flex-1 border-r border-yellow-500/50 h-3"></div>
+                                                    <div class="flex-1 border-r border-yellow-500/50 h-3"></div>
+                                                    <div class="flex-1 border-r border-yellow-500/50 h-3"></div>
+                                                    <div class="flex-1 h-3"></div>
+                                                </div>
+                                                <div class="text-center text-xs text-yellow-400 mt-1">直径测量</div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 grid grid-cols-2 gap-4">
+                                            <div class="bg-slate-700/50 rounded p-3 text-center">
+                                                <div class="text-xs text-gray-400">扩展度范围</div>
+                                                <div class="text-lg font-mono text-blue-400">280~600<span class="text-sm">mm</span></div>
+                                            </div>
+                                            <div class="bg-slate-700/50 rounded p-3 text-center">
+                                                <div class="text-xs text-gray-400">测试标准</div>
+                                                <div class="text-sm text-gray-300">GB/T 2419-2005</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 湿密度测试 -->
+                                    <div class="flex-1 bg-slate-800/50 rounded-lg p-4">
+                                        <h4 class="text-sm font-semibold text-blue-400 mb-3">湿密度测试（量筒法）</h4>
+                                        <div class="relative h-64 flex items-center justify-center">
+                                            <!-- 量筒 -->
+                                            <div class="relative">
+                                                <div class="w-20 h-48 border-2 border-gray-400 bg-gray-700/30 rounded-b-lg relative overflow-hidden">
+                                                    <!-- 刻度 -->
+                                                    <div class="absolute right-0 top-0 bottom-0 w-6 border-l border-gray-500/50">
+                                                        <div class="absolute top-4 right-1 text-xs text-gray-500">1000</div>
+                                                        <div class="absolute top-12 right-1 text-xs text-gray-500">800</div>
+                                                        <div class="absolute top-20 right-1 text-xs text-gray-500">600</div>
+                                                        <div class="absolute top-28 right-1 text-xs text-gray-500">400</div>
+                                                        <div class="absolute top-36 right-1 text-xs text-gray-500">200</div>
+                                                    </div>
+                                                    <!-- 浆体液面 -->
+                                                    <div id="slurry-level" class="absolute bottom-0 left-0 right-6 bg-amber-700/80 transition-all duration-1000" style="height: 0%"></div>
+                                                </div>
+                                                <div class="absolute -top-6 left-1/2 -translate-x-1/2 text-xs text-gray-400">1000mL量筒</div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 grid grid-cols-2 gap-4">
+                                            <div class="bg-slate-700/50 rounded p-3 text-center">
+                                                <div class="text-xs text-gray-400">湿密度范围</div>
+                                                <div class="text-lg font-mono text-blue-400">1.9~2.1<span class="text-sm">g/cm³</span></div>
+                                            </div>
+                                            <div class="bg-slate-700/50 rounded p-3 text-center">
+                                                <div class="text-xs text-gray-400">测试标准</div>
+                                                <div class="text-sm text-gray-300">GB/T 208-2014</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 场景4: 硬化体性能测试 -->
+                        <div id="scene-4" class="scene-content absolute inset-0 p-6 hidden">
+                            <div class="h-full flex flex-col">
+                                <h3 class="text-lg font-bold text-blue-400 mb-4">硬化体核心性能测试</h3>
+                                <div class="flex-1 flex gap-6">
+                                    <!-- 结石率测试 -->
+                                    <div class="w-1/3 bg-slate-800/50 rounded-lg p-4">
+                                        <h4 class="text-sm font-semibold text-blue-400 mb-3">结石率测试</h4>
+                                        <div class="relative h-48 flex items-center justify-center">
+                                            <!-- 量筒与试样 -->
+                                            <div class="relative">
+                                                <div class="w-16 h-40 border-2 border-gray-400 bg-gray-700/30 rounded-b-lg relative overflow-hidden">
+                                                    <div id="solidified-mass" class="absolute bottom-4 left-1 right-1 bg-gradient-to-t from-gray-600 to-gray-500 rounded transition-all duration-1000" style="height: 0%"></div>
+                                                </div>
+                                                <div class="absolute -right-20 top-1/2 -translate-y-1/2">
+                                                    <div class="text-xs text-gray-400 mb-1">7d养护</div>
+                                                    <div class="text-xs text-gray-400">倒置排水法</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-4 bg-slate-700/50 rounded p-3 text-center">
+                                            <div class="text-xs text-gray-400">所有工况结石率</div>
+                                            <div class="text-2xl font-mono text-green-400">＞92%</div>
+                                        </div>
+                                    </div>
+                                    <!-- 抗压强度测试 -->
+                                    <div class="flex-1 bg-slate-800/50 rounded-lg p-4">
+                                        <h4 class="text-sm font-semibold text-blue-400 mb-3">无侧限抗压强度测试</h4>
+                                        <div class="flex gap-4 h-48">
+                                            <!-- 试验机 -->
+                                            <div class="w-1/2 relative flex items-center justify-center">
+                                                <svg width="160" height="200" viewBox="0 0 160 200">
+                                                    <!-- 上压板 -->
+                                                    <rect id="upper-plate" x="30" y="20" width="100" height="20" fill="#4B5563"/>
+                                                    <!-- 下压板 -->
+                                                    <rect x="30" y="160" width="100" height="20" fill="#4B5563"/>
+                                                    <!-- 试块 -->
+                                                    <rect id="test-specimen" x="55" y="100" width="50" height="60" fill="#9CA3AF" stroke="#6B7280"/>
+                                                    <!-- 力传感器 -->
+                                                    <rect x="60" y="40" width="40" height="20" fill="#165DFF"/>
+                                                    <!-- 机架 -->
+                                                    <rect x="20" y="20" width="10" height="160" fill="#374151"/>
+                                                    <rect x="130" y="20" width="10" height="160" fill="#374151"/>
+                                                    <!-- 压力曲线 -->
+                                                    <path id="pressure-curve" d="M140 180 L150 180" stroke="#EF4444" stroke-width="2" fill="none"/>
+                                                </svg>
+                                                <div class="absolute bottom-0 left-0 right-0 text-center">
+                                                    <div class="text-xs text-gray-400">加载速率: 1mm/s</div>
+                                                </div>
+                                            </div>
+                                            <!-- 强度数据 -->
+                                            <div class="w-1/2 space-y-3">
+                                                <div class="bg-slate-700/50 rounded p-3">
+                                                    <div class="text-xs text-gray-400 mb-1">8%固化剂 + 振动搅拌</div>
+                                                    <div class="flex justify-between items-center">
+                                                        <span class="text-xs text-gray-500">7d强度</span>
+                                                        <span class="text-lg font-mono text-blue-400">0.89<span class="text-sm">MPa</span></span>
+                                                    </div>
+                                                    <div class="flex justify-between items-center mt-1">
+                                                        <span class="text-xs text-gray-500">28d强度</span>
+                                                        <span class="text-lg font-mono text-green-400">1.83<span class="text-sm">MPa</span></span>
+                                                    </div>
+                                                </div>
+                                                <div class="bg-slate-700/50 rounded p-3">
+                                                    <div class="text-xs text-gray-400 mb-1">16%固化剂掺量组</div>
+                                                    <div class="flex justify-between items-center">
+                                                        <span class="text-xs text-gray-500">28d强度</span>
+                                                        <span class="text-lg font-mono text-purple-400">3.68<span class="text-sm">MPa</span></span>
+                                                    </div>
+                                                </div>
+                                                <div class="bg-blue-500/20 border border-blue-500/50 rounded p-2">
+                                                    <div class="text-xs text-blue-300">工程要求: 7d强度 ≥ 0.6MPa</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 场景5: 水稳定性试验 -->
+                        <div id="scene-5" class="scene-content absolute inset-0 p-6 hidden">
+                            <div class="h-full flex flex-col">
+                                <h3 class="text-lg font-bold text-blue-400 mb-4">水稳定性试验对比</h3>
+                                <div class="flex-1 grid grid-cols-3 gap-4">
+                                    <!-- 振动搅拌组 -->
+                                    <div class="compare-card vibration">
+                                        <div class="text-center mb-4">
+                                            <div class="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm font-semibold">振动搅拌实验组</div>
+                                        </div>
+                                        <div class="relative h-32 bg-slate-700/50 rounded-lg mb-4 flex items-center justify-center">
+                                            <!-- 浸泡容器 -->
+                                            <div class="relative">
+                                                <div class="w-24 h-20 border-2 border-blue-400/50 bg-blue-400/10 rounded-b-lg relative overflow-hidden">
+                                                    <div class="absolute bottom-0 left-0 right-0 h-3/4 bg-cyan-400/30"></div>
+                                                    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-12 h-8 bg-gray-500 rounded"></div>
+                                                </div>
+                                                <div class="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-gray-400">20℃清水</div>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-400">浸泡时间</span>
+                                                <span class="text-white">24h</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-400">称重频率</span>
+                                                <span class="text-white">每8h</span>
+                                            </div>
+                                            <div class="flex justify-between border-t border-blue-500/30 pt-2 mt-2">
+                                                <span class="text-gray-400">强度损失率</span>
+                                                <span class="text-green-400 font-bold">~5.5%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 普通搅拌对照组 -->
+                                    <div class="compare-card normal">
+                                        <div class="text-center mb-4">
+                                            <div class="inline-block px-3 py-1 bg-gray-500/20 text-gray-400 rounded-full text-sm font-semibold">普通搅拌对照组</div>
+                                        </div>
+                                        <div class="relative h-32 bg-slate-700/50 rounded-lg mb-4 flex items-center justify-center">
+                                            <div class="relative">
+                                                <div class="w-24 h-20 border-2 border-gray-500/50 bg-gray-500/10 rounded-b-lg relative overflow-hidden">
+                                                    <div class="absolute bottom-0 left-0 right-0 h-3/4 bg-cyan-400/30"></div>
+                                                    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-12 h-8 bg-gray-600 rounded"></div>
+                                                </div>
+                                                <div class="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-gray-400">20℃清水</div>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-400">浸泡时间</span>
+                                                <span class="text-white">24h</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-400">称重频率</span>
+                                                <span class="text-white">每8h</span>
+                                            </div>
+                                            <div class="flex justify-between border-t border-gray-500/30 pt-2 mt-2">
+                                                <span class="text-gray-400">强度损失率</span>
+                                                <span class="text-yellow-400 font-bold">~12.3%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 水泥固化剂对照组 -->
+                                    <div class="compare-card cement">
+                                        <div class="text-center mb-4">
+                                            <div class="inline-block px-3 py-1 bg-purple-500/20 text-purple-400 rounded-full text-sm font-semibold">水泥固化剂对照组</div>
+                                        </div>
+                                        <div class="relative h-32 bg-slate-700/50 rounded-lg mb-4 flex items-center justify-center">
+                                            <div class="relative">
+                                                <div class="w-24 h-20 border-2 border-purple-500/50 bg-purple-500/10 rounded-b-lg relative overflow-hidden">
+                                                    <div class="absolute bottom-0 left-0 right-0 h-3/4 bg-cyan-400/30"></div>
+                                                    <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-12 h-8 bg-gray-500 rounded"></div>
+                                                </div>
+                                                <div class="absolute -top-5 left-1/2 -translate-x-1/2 text-xs text-gray-400">20℃清水</div>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-2 text-sm">
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-400">浸泡时间</span>
+                                                <span class="text-white">24h</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-gray-400">称重频率</span>
+                                                <span class="text-white">每8h</span>
+                                            </div>
+                                            <div class="flex justify-between border-t border-purple-500/30 pt-2 mt-2">
+                                                <span class="text-gray-400">强度损失率</span>
+                                                <span class="text-orange-400 font-bold">~15.8%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 conclusion-highlight">
+                                    <div class="text-sm text-gray-300">
+                                        <span class="text-blue-400 font-semibold">结论：</span>
+                                        TF固化剂 + 振动搅拌工艺展现出优异的水稳定性能，24h浸泡后强度损失率仅为5.5%，
+                                        显著优于普通搅拌组（12.3%）和水泥固化剂组（15.8%）。
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 场景6: 试验结论可视化 -->
+                        <div id="scene-6" class="scene-content absolute inset-0 p-6 hidden">
+                            <div class="h-full flex flex-col">
+                                <h3 class="text-lg font-bold text-blue-400 mb-4">多变量性能影响规律可视化</h3>
+                                <div class="flex-1 grid grid-cols-2 gap-4">
+                                    <!-- 曲线1: 水耗对扩展度的影响 -->
+                                    <div class="chart-container">
+                                        <h4 class="text-xs font-semibold text-gray-400 mb-2">① 水耗对浆体扩展度的影响</h4>
+                                        <canvas id="chart1" height="140"></canvas>
+                                    </div>
+                                    <!-- 曲线2: 固化剂掺量对7d强度的影响 -->
+                                    <div class="chart-container">
+                                        <h4 class="text-xs font-semibold text-gray-400 mb-2">② 固化剂掺量对7d抗压强度的影响</h4>
+                                        <canvas id="chart2" height="140"></canvas>
+                                    </div>
+                                    <!-- 曲线3: 固化剂掺量对28d强度的影响 -->
+                                    <div class="chart-container">
+                                        <h4 class="text-xs font-semibold text-gray-400 mb-2">③ 固化剂掺量对28d抗压强度的影响</h4>
+                                        <canvas id="chart3" height="140"></canvas>
+                                    </div>
+                                    <!-- 曲线4: 浸泡时间对强度的影响 -->
+                                    <div class="chart-container">
+                                        <h4 class="text-xs font-semibold text-gray-400 mb-2">④ 浸泡时间对试块强度的影响</h4>
+                                        <canvas id="chart4" height="140"></canvas>
+                                    </div>
+                                </div>
+                                <!-- 最优方案 -->
+                                <div class="mt-4 bg-gradient-to-r from-blue-600/20 to-green-500/20 border border-blue-500/50 rounded-lg p-4">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="text-sm font-semibold text-blue-400 mb-1">最优工程方案</div>
+                                            <div class="text-xs text-gray-300">
+                                                8% TF固化剂掺量 + 振动搅拌120s + 水耗40%
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-4 text-center">
+                                            <div class="bg-slate-800/50 rounded px-4 py-2">
+                                                <div class="text-xs text-gray-400">7d强度</div>
+                                                <div class="text-lg font-mono text-green-400">≥0.6<span class="text-sm">MPa</span></div>
+                                            </div>
+                                            <div class="bg-slate-800/50 rounded px-4 py-2">
+                                                <div class="text-xs text-gray-400">扩展度</div>
+                                                <div class="text-lg font-mono text-blue-400">≥250<span class="text-sm">mm</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：说明与控制 -->
+                <div class="lg:col-span-1 space-y-4">
+                    <!-- 步骤说明 -->
+                    <div class="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
+                        <h3 id="step-title" class="text-lg font-bold text-white mb-2">原料与配比设计</h3>
+                        <p id="step-desc" class="text-sm text-gray-400 leading-relaxed">
+                            展示试验核心原料（高硅铁尾矿粉、TF型固化剂、P·O 42.5水泥、自来水），
+                            同步标注铁尾矿粉化学成分与3因素3水平正交试验设计矩阵。
+                        </p>
+                        <div id="step-params" class="mt-4 space-y-2">
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                <span class="text-gray-400">SiO₂含量:</span>
+                                <span class="text-white font-mono">67.32%</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                <span class="text-gray-400">固化剂掺量:</span>
+                                <span class="text-white font-mono">8%/12%/16%</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs">
+                                <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                <span class="text-gray-400">水耗:</span>
+                                <span class="text-white font-mono">30%/40%/50%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作控制 -->
+                    <div class="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
+                        <h4 class="text-sm font-semibold text-gray-300 mb-3">实验控制</h4>
+                        <div class="space-y-3">
+                            <button id="play-btn" class="btn-primary w-full flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                                </svg>
+                                开始仿真
+                            </button>
+                            <button id="reset-btn" class="btn-secondary w-full flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                                重置
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 数据记录 -->
+                    <div class="bg-slate-800/50 rounded-lg p-4 border border-blue-500/20">
+                        <h4 class="text-sm font-semibold text-gray-300 mb-3">实时数据</h4>
+                        <div id="realtime-data" class="space-y-2 text-xs">
+                            <div class="flex justify-between py-1 border-b border-gray-700">
+                                <span class="text-gray-500">当前步骤</span>
+                                <span class="text-blue-400" id="current-step-display">原料配比设计</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-gray-700">
+                                <span class="text-gray-500">仿真进度</span>
+                                <span class="text-blue-400" id="progress-display">0%</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span class="text-gray-500">状态</span>
+                                <span class="text-green-400" id="status-display">就绪</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 导航按钮 -->
+                    <div class="flex gap-2">
+                        <button id="prev-btn" class="flex-1 btn-secondary py-3 text-sm" disabled>
+                            上一步
+                        </button>
+                        <button id="next-btn" class="flex-1 btn-primary py-3 text-sm">
+                            下一步
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 实验状态管理
+        const ExperimentState = {
+            currentStep: 1,
+            totalSteps: 6,
+            isPlaying: false,
+            animationId: null,
+            charts: {},
+            
+            // 步骤配置
+            steps: [
+                {
+                    title: '原料与配比设计',
+                    desc: '展示试验核心原料（高硅铁尾矿粉、TF型固化剂、P·O 42.5水泥、自来水），同步标注铁尾矿粉化学成分与3因素3水平正交试验设计矩阵。',
+                    params: [
+                        { label: 'SiO₂含量', value: '67.32%' },
+                        { label: 'Fe₂O₃含量', value: '9.79%' },
+                        { label: 'Al₂O₃含量', value: '8.44%' },
+                        { label: '固化剂掺量', value: '8%/12%/16%' },
+                        { label: '水耗', value: '30%/40%/50%' }
+                    ]
+                },
+                {
+                    title: '振动搅拌工艺仿真',
+                    desc: '分屏展示DT15振动搅拌机宏观工作流程与微观颗粒分散机理，对比振动搅拌与普通搅拌的差异，直观呈现振动搅拌提升水化反应均匀性的核心机理。',
+                    params: [
+                        { label: '干混时间', value: '5s' },
+                        { label: '加水时间', value: '10s' },
+                        { label: '总搅拌时长', value: '120s' },
+                        { label: '振动频率', value: '50Hz' }
+                    ]
+                },
+                {
+                    title: '新拌浆体性能测试',
+                    desc: '依次开展扩展度测试（坍落筒法，内径75mm、高度150mm）与湿密度测试（1000mL量筒法），动态展示测试过程与结果数据。',
+                    params: [
+                        { label: '扩展度范围', value: '280~600mm' },
+                        { label: '湿密度范围', value: '1.9~2.1g/cm³' },
+                        { label: '坍落筒规格', value: 'φ75×150mm' },
+                        { label: '量筒规格', value: '1000mL' }
+                    ]
+                },
+                {
+                    title: '硬化体核心性能测试',
+                    desc: '演示结石率测试（倒置排水法）与无侧限抗压强度测试（万能试验机，1mm/s加载速率），展示7d/28d强度数据与工程达标情况。',
+                    params: [
+                        { label: '结石率', value: '>92%' },
+                        { label: '7d强度(8%)', value: '0.89MPa' },
+                        { label: '28d强度(8%)', value: '1.83MPa' },
+                        { label: '28d强度(16%)', value: '3.68MPa' }
+                    ]
+                },
+                {
+                    title: '水稳定性试验对比',
+                    desc: '分屏对比展示振动搅拌实验组、普通搅拌对照组、水泥固化剂对照组的28d试块清水浸泡24h全过程，直观展示TF固化剂+振动搅拌的水稳定性优势。',
+                    params: [
+                        { label: '浸泡温度', value: '20℃' },
+                        { label: '浸泡时间', value: '24h' },
+                        { label: '振动组损失率', value: '~5.5%' },
+                        { label: '普通组损失率', value: '~12.3%' }
+                    ]
+                },
+                {
+                    title: '试验结论可视化',
+                    desc: '动态生成4组核心影响曲线，直观展示振动搅拌vs普通搅拌、TF固化剂vs P·O 42.5水泥的性能差异，突出最优工程方案。',
+                    params: [
+                        { label: '最优固化剂掺量', value: '8%' },
+                        { label: '最优搅拌方式', value: '振动搅拌120s' },
+                        { label: '工程达标', value: '7d≥0.6MPa' },
+                        { label: '扩展度达标', value: '≥250mm' }
+                    ]
+                }
+            ]
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeEventListeners();
+            updateUI();
+        });
+
+        // 事件监听
+        function initializeEventListeners() {
+            document.getElementById('play-btn').addEventListener('click', togglePlay);
+            document.getElementById('reset-btn').addEventListener('click', resetExperiment);
+            document.getElementById('prev-btn').addEventListener('click', () => changeStep(-1));
+            document.getElementById('next-btn').addEventListener('click', () => changeStep(1));
+        }
+
+        // 切换播放/暂停
+        function togglePlay() {
+            const btn = document.getElementById('play-btn');
+            if (ExperimentState.isPlaying) {
+                pauseAnimation();
+                btn.innerHTML = `
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                    </svg>
+                    继续仿真
+                `;
+            } else {
+                startAnimation();
+                btn.innerHTML = `
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                    暂停仿真
+                `;
+            }
+        }
+
+        // 开始动画
+        function startAnimation() {
+            ExperimentState.isPlaying = true;
+            document.getElementById('status-display').textContent = '进行中';
+            
+            switch(ExperimentState.currentStep) {
+                case 1:
+                    animateScene1();
+                    break;
+                case 2:
+                    animateScene2();
+                    break;
+                case 3:
+                    animateScene3();
+                    break;
+                case 4:
+                    animateScene4();
+                    break;
+                case 5:
+                    animateScene5();
+                    break;
+                case 6:
+                    animateScene6();
+                    break;
+            }
+        }
+
+        // 暂停动画
+        function pauseAnimation() {
+            ExperimentState.isPlaying = false;
+            document.getElementById('status-display').textContent = '已暂停';
+            if (ExperimentState.animationId) {
+                cancelAnimationFrame(ExperimentState.animationId);
+            }
+        }
+
+        // 重置实验
+        function resetExperiment() {
+            pauseAnimation();
+            ExperimentState.currentStep = 1;
+            document.getElementById('play-btn').innerHTML = `
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                </svg>
+                开始仿真
+            `;
+            document.getElementById('status-display').textContent = '就绪';
+            updateUI();
+        }
+
+        // 切换步骤
+        function changeStep(direction) {
+            const newStep = ExperimentState.currentStep + direction;
+            if (newStep >= 1 && newStep <= ExperimentState.totalSteps) {
+                ExperimentState.currentStep = newStep;
+                pauseAnimation();
+                document.getElementById('play-btn').innerHTML = `
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                    </svg>
+                    开始仿真
+                `;
+                document.getElementById('status-display').textContent = '就绪';
+                updateUI();
+            }
+        }
+
+        // 更新UI
+        function updateUI() {
+            const step = ExperimentState.currentStep;
+            const stepData = ExperimentState.steps[step - 1];
+            
+            // 更新进度
+            const progress = (step / ExperimentState.totalSteps) * 100;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            document.getElementById('current-step-num').textContent = step;
+            document.getElementById('progress-display').textContent = Math.round(progress) + '%';
+            
+            // 更新步骤指示器
+            for (let i = 1; i <= ExperimentState.totalSteps; i++) {
+                const indicator = document.getElementById(`step-${i}-ind`);
+                const line = document.getElementById(`line-${i}`);
+                
+                indicator.classList.remove('active', 'completed');
+                if (i < step) {
+                    indicator.classList.add('completed');
+                    indicator.innerHTML = '√';
+                    if (line) line.style.width = '100%';
+                } else if (i === step) {
+                    indicator.classList.add('active');
+                    indicator.innerHTML = i;
+                    if (line) line.style.width = '0%';
+                } else {
+                    indicator.innerHTML = i;
+                    if (line) line.style.width = '0%';
+                }
+            }
+            
+            // 更新场景显示
+            document.querySelectorAll('.scene-content').forEach((scene, index) => {
+                scene.classList.toggle('hidden', index + 1 !== step);
+            });
+            
+            // 更新说明
+            document.getElementById('step-title').textContent = stepData.title;
+            document.getElementById('step-desc').textContent = stepData.desc;
+            document.getElementById('current-step-display').textContent = stepData.title;
+            
+            // 更新参数
+            const paramsContainer = document.getElementById('step-params');
+            paramsContainer.innerHTML = stepData.params.map(param => `
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                    <span class="text-gray-400">${param.label}:</span>
+                    <span class="text-white font-mono">${param.value}</span>
+                </div>
+            `).join('');
+            
+            // 更新按钮状态
+            document.getElementById('prev-btn').disabled = step === 1;
+            document.getElementById('next-btn').disabled = step === ExperimentState.totalSteps;
+            
+            // 如果进入第6步，初始化图表
+            if (step === 6) {
+                setTimeout(initCharts, 100);
+            }
+        }
+
+        // 场景1动画：原料配比设计
+        function animateScene1() {
+            let progress = 0;
+            const materialCards = document.querySelectorAll('#scene-1 .material-card');
+            
+            function animate() {
+                if (!ExperimentState.isPlaying) return;
+                
+                progress += 0.5;
+                document.getElementById('progress-display').textContent = Math.min(Math.round(progress), 100) + '%';
+                
+                // 依次高亮原料卡片
+                const activeIndex = Math.floor(progress / 20);
+                materialCards.forEach((card, index) => {
+                    if (index === activeIndex && progress < 100) {
+                        card.style.transform = 'translateY(-4px) scale(1.02)';
+                        card.style.borderColor = 'rgba(22, 93, 255, 0.8)';
+                    } else {
+                        card.style.transform = '';
+                        card.style.borderColor = '';
+                    }
+                });
+                
+                if (progress < 100) {
+                    ExperimentState.animationId = requestAnimationFrame(animate);
+                } else {
+                    document.getElementById('status-display').textContent = '完成';
+                }
+            }
+            
+            animate();
+        }
+
+        // 场景2动画：振动搅拌工艺
+        function animateScene2() {
+            let progress = 0;
+            const blades = document.getElementById('blades-macro');
+            const slurry = document.getElementById('slurry-macro');
+            const vibrationWaves = document.getElementById('vibration-waves');
+            const macroPanel = document.getElementById('macro-panel');
+            
+            function animate() {
+                if (!ExperimentState.isPlaying) return;
+                
+                progress += 0.3;
+                document.getElementById('progress-display').textContent = Math.min(Math.round(progress * 1.2), 100) + '%';
+                
+                // 0-20%: 干混阶段
+                if (progress < 20) {
+                    blades.classList.add('rotating');
+                    slurry.style.opacity = '0.3';
+                }
+                // 20-30%: 加水阶段
+                else if (progress < 30) {
+                    slurry.style.opacity = '0.6';
+                    slurry.style.transition = 'opacity 1s';
+                }
+                // 30-100%: 振动搅拌阶段
+                else {
+                    slurry.style.opacity = '0.9';
+                    vibrationWaves.style.opacity = '1';
+                    macroPanel.classList.add('vibrating');
+                    
+                    // 绘制微观粒子
+                    drawParticles();
+                }
+                
+                if (progress < 85) {
+                    ExperimentState.animationId = requestAnimationFrame(animate);
+                } else {
+                    macroPanel.classList.remove('vibrating');
+                    document.getElementById('status-display').textContent = '完成';
+                }
+            }
+            
+            animate();
+        }
+
+        // 绘制微观粒子
+        function drawParticles() {
+            const canvas = document.getElementById('particle-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 左侧：普通搅拌（颗粒团聚）
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.6)';
+            for (let i = 0; i < 8; i++) {
+                const x = 50 + Math.random() * 80;
+                const y = 50 + Math.random() * 100;
+                const radius = 8 + Math.random() * 6;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // 右侧：振动搅拌（均匀分散）
+            ctx.fillStyle = 'rgba(22, 93, 255, 0.6)';
+            for (let i = 0; i < 20; i++) {
+                const x = 180 + Math.random() * 100;
+                const y = 30 + Math.random() * 140;
+                const radius = 3 + Math.random() * 3;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // 场景3动画：新拌浆体性能测试
+        function animateScene3() {
+            let progress = 0;
+            const slumpCone = document.getElementById('slump-cone');
+            const slurryPile = document.getElementById('slurry-pile');
+            const ruler = document.getElementById('ruler');
+            const slurryLevel = document.getElementById('slurry-level');
+            
+            function animate() {
+                if (!ExperimentState.isPlaying) return;
+                
+                progress += 0.4;
+                document.getElementById('progress-display').textContent = Math.min(Math.round(progress), 100) + '%';
+                
+                // 0-30%: 填充坍落筒
+                if (progress < 30) {
+                    slurryPile.style.opacity = '1';
+                    slurryPile.style.width = '60px';
+                    slurryPile.style.height = '100px';
+                }
+                // 30-50%: 提起坍落筒，浆体坍落
+                else if (progress < 50) {
+                    slumpCone.style.transform = 'translateY(-80px)';
+                    slurryPile.style.animation = 'slump 2s ease forwards';
+                }
+                // 50-70%: 测量扩展度
+                else if (progress < 70) {
+                    ruler.style.opacity = '1';
+                }
+                // 70-100%: 湿密度测试
+                else {
+                    slurryLevel.style.height = '75%';
+                }
+                
+                if (progress < 100) {
+                    ExperimentState.animationId = requestAnimationFrame(animate);
+                } else {
+                    document.getElementById('status-display').textContent = '完成';
+                }
+            }
+            
+            animate();
+        }
+
+        // 场景4动画：硬化体性能测试
+        function animateScene4() {
+            let progress = 0;
+            const solidifiedMass = document.getElementById('solidified-mass');
+            const upperPlate = document.getElementById('upper-plate');
+            const specimen = document.getElementById('test-specimen');
+            const pressureCurve = document.getElementById('pressure-curve');
+            
+            function animate() {
+                if (!ExperimentState.isPlaying) return;
+                
+                progress += 0.35;
+                document.getElementById('progress-display').textContent = Math.min(Math.round(progress), 100) + '%';
+                
+                // 0-40%: 结石率展示
+                if (progress < 40) {
+                    solidifiedMass.style.height = '92%';
+                }
+                // 40-100%: 抗压强度测试
+                else {
+                    const compressionProgress = (progress - 40) / 60;
+                    const plateY = 20 + compressionProgress * 60;
+                    upperPlate.setAttribute('y', plateY);
+                    
+                    // 试块压缩变形
+                    if (compressionProgress > 0.7) {
+                        specimen.setAttribute('height', 60 - (compressionProgress - 0.7) * 40);
+                        specimen.setAttribute('y', 100 + (compressionProgress - 0.7) * 40);
+                    }
+                    
+                    // 压力曲线
+                    const curveY = 180 - compressionProgress * 80;
+                    pressureCurve.setAttribute('d', `M140 180 Q145 ${curveY} 150 ${curveY}`);
+                }
+                
+                if (progress < 100) {
+                    ExperimentState.animationId = requestAnimationFrame(animate);
+                } else {
+                    document.getElementById('status-display').textContent = '完成';
+                }
+            }
+            
+            animate();
+        }
+
+        // 场景5动画：水稳定性试验
+        function animateScene5() {
+            let progress = 0;
+            const timePoints = [0, 33, 66, 100];
+            const timelinePoints = document.querySelectorAll('.timeline-point');
+            
+            function animate() {
+                if (!ExperimentState.isPlaying) return;
+                
+                progress += 0.3;
+                document.getElementById('progress-display').textContent = Math.min(Math.round(progress), 100) + '%';
+                
+                // 更新时间轴
+                timePoints.forEach((point, index) => {
+                    if (progress >= point) {
+                        timelinePoints[index]?.classList.add('active');
+                    }
+                });
+                
+                if (progress < 100) {
+                    ExperimentState.animationId = requestAnimationFrame(animate);
+                } else {
+                    document.getElementById('status-display').textContent = '完成';
+                }
+            }
+            
+            animate();
+        }
+
+        // 场景6动画：试验结论可视化
+        function animateScene6() {
+            let progress = 0;
+            
+            function animate() {
+                if (!ExperimentState.isPlaying) return;
+                
+                progress += 0.5;
+                document.getElementById('progress-display').textContent = Math.min(Math.round(progress), 100) + '%';
+                
+                if (progress < 100) {
+                    ExperimentState.animationId = requestAnimationFrame(animate);
+                } else {
+                    document.getElementById('status-display').textContent = '完成';
+                }
+            }
+            
+            animate();
+        }
+
+        // 初始化图表
+        function initCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: { color: '#9CA3AF', font: { size: 10 } }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#6B7280', font: { size: 9 } },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    },
+                    y: {
+                        ticks: { color: '#6B7280', font: { size: 9 } },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    }
+                }
+            };
+
+            // 图表1: 水耗对扩展度的影响
+            const ctx1 = document.getElementById('chart1')?.getContext('2d');
+            if (ctx1 && !ExperimentState.charts.chart1) {
+                ExperimentState.charts.chart1 = new Chart(ctx1, {
+                    type: 'line',
+                    data: {
+                        labels: ['30%', '35%', '40%', '45%', '50%'],
+                        datasets: [{
+                            label: '扩展度(mm)',
+                            data: [280, 380, 480, 550, 600],
+                            borderColor: '#165DFF',
+                            backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        ...chartOptions,
+                        plugins: {
+                            ...chartOptions.plugins,
+                            annotation: {
+                                annotations: {
+                                    line1: {
+                                        type: 'line',
+                                        yMin: 250,
+                                        yMax: 250,
+                                        borderColor: '#52C41A',
+                                        borderWidth: 2,
+                                        borderDash: [5, 5],
+                                        label: { content: '工程阈值', enabled: true }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 图表2: 固化剂掺量对7d强度的影响
+            const ctx2 = document.getElementById('chart2')?.getContext('2d');
+            if (ctx2 && !ExperimentState.charts.chart2) {
+                ExperimentState.charts.chart2 = new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: ['8%', '10%', '12%', '14%', '16%'],
+                        datasets: [{
+                            label: '振动搅拌',
+                            data: [0.89, 1.25, 1.68, 2.35, 2.89],
+                            borderColor: '#165DFF',
+                            backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: '普通搅拌',
+                            data: [0.65, 0.92, 1.28, 1.75, 2.15],
+                            borderColor: '#6B7280',
+                            backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+
+            // 图表3: 固化剂掺量对28d强度的影响
+            const ctx3 = document.getElementById('chart3')?.getContext('2d');
+            if (ctx3 && !ExperimentState.charts.chart3) {
+                ExperimentState.charts.chart3 = new Chart(ctx3, {
+                    type: 'line',
+                    data: {
+                        labels: ['8%', '10%', '12%', '14%', '16%'],
+                        datasets: [{
+                            label: '振动搅拌',
+                            data: [1.83, 2.45, 2.98, 3.35, 3.68],
+                            borderColor: '#165DFF',
+                            backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: '普通搅拌',
+                            data: [1.42, 1.88, 2.35, 2.75, 3.05],
+                            borderColor: '#6B7280',
+                            backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+
+            // 图表4: 浸泡时间对强度的影响
+            const ctx4 = document.getElementById('chart4')?.getContext('2d');
+            if (ctx4 && !ExperimentState.charts.chart4) {
+                ExperimentState.charts.chart4 = new Chart(ctx4, {
+                    type: 'line',
+                    data: {
+                        labels: ['0h', '8h', '16h', '24h'],
+                        datasets: [{
+                            label: '振动搅拌组',
+                            data: [1.83, 1.78, 1.74, 1.73],
+                            borderColor: '#165DFF',
+                            backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: '普通搅拌组',
+                            data: [1.42, 1.32, 1.28, 1.25],
+                            borderColor: '#6B7280',
+                            backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }, {
+                            label: '水泥固化剂组',
+                            data: [1.65, 1.48, 1.42, 1.39],
+                            borderColor: '#8B5CF6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: chartOptions
+                });
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>矿业工程科研仿真 - 铁尾矿粉固化充填材料(SITP)全流程试验</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        industrial: {
+                            gray: '#4A5568',
+                            dark: '#2D3748',
+                            light: '#718096'
+                        },
+                        research: {
+                            blue: '#165DFF',
+                            dark: '#0E4AD0',
+                            light: '#4B85FF'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* ==========================================
+           工业级科研仿真样式 - 1080P 60fps
+           ========================================== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        /* 工业风参数标注样式 */
+        .param-label {
+            background: rgba(22, 93, 255, 0.9);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Consolas', monospace;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .param-value {
+            background: rgba(45, 55, 72, 0.95);
+            color: #48bb78;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Consolas', monospace;
+            border: 1px solid #48bb78;
+        }
+
+        /* 试验室固定视角容器 */
+        .lab-viewport {
+            width: 100%;
+            max-width: 1920px;
+            height: 1080px;
+            margin: 0 auto;
+            background: linear-gradient(180deg, #f7fafc 0%, #e2e8f0 100%);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* 步骤切换动画 - 稳定无抖动 */
+        .scene {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .scene.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ==========================================
+           场景1：原料配比设计
+           ========================================== */
+        
+        @keyframes dataFlow {
+            0% { stroke-dashoffset: 100; opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { stroke-dashoffset: 0; opacity: 0.3; }
+        }
+
+        @keyframes matrixHighlight {
+            0%, 100% { background: rgba(22, 93, 255, 0.1); }
+            50% { background: rgba(22, 93, 255, 0.3); }
+        }
+
+        .raw-material {
+            position: absolute;
+            width: 180px;
+            padding: 16px;
+            background: linear-gradient(145deg, #ffffff 0%, #f0f0f0 100%);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            border: 2px solid #e2e8f0;
+            transition: all 0.5s ease;
+        }
+
+        .raw-material:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+            border-color: #165DFF;
+        }
+
+        .material-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 12px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .icon-tailings { background: linear-gradient(135deg, #718096 0%, #4A5568 100%); }
+        .icon-curing { background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%); }
+        .icon-cement { background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); }
+        .icon-water { background: linear-gradient(135deg, #63b3ed 0%, #4299e1 100%); }
+
+        .chemical-composition {
+            position: absolute;
+            background: rgba(26, 32, 44, 0.95);
+            color: #e2e8f0;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-family: 'Consolas', monospace;
+            border: 1px solid #4A5568;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+
+        .matrix-table {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+            overflow: hidden;
+            border: 2px solid #e2e8f0;
+        }
+
+        .matrix-cell {
+            padding: 10px 14px;
+            text-align: center;
+            font-size: 12px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .matrix-cell.header {
+            background: #165DFF;
+            color: white;
+            font-weight: 600;
+        }
+
+        .matrix-cell.highlight {
+            animation: matrixHighlight 2s ease-in-out infinite;
+            font-weight: 700;
+            color: #165DFF;
+        }
+
+        /* ==========================================
+           场景2：振动搅拌工艺 - 双视角
+           ========================================== */
+        
+        @keyframes vibrateMix {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-1px, 1px); }
+            20% { transform: translate(1px, -1px); }
+            30% { transform: translate(-1px, -1px); }
+            40% { transform: translate(1px, 1px); }
+            50% { transform: translate(-2px, 0); }
+            60% { transform: translate(2px, 0); }
+            70% { transform: translate(0, 2px); }
+            80% { transform: translate(0, -2px); }
+            90% { transform: translate(1px, 1px); }
+        }
+
+        @keyframes bladeRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes particleDisperse {
+            0% { 
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% { 
+                transform: translate(var(--tx), var(--ty)) scale(0.5);
+                opacity: 0.6;
+            }
+        }
+
+        @keyframes hydrationReaction {
+            0% { 
+                transform: scale(0.8);
+                opacity: 0.5;
+                filter: brightness(1);
+            }
+            50% { 
+                transform: scale(1.2);
+                opacity: 1;
+                filter: brightness(1.3);
+            }
+            100% { 
+                transform: scale(1);
+                opacity: 0.9;
+                filter: brightness(1.1);
+            }
+        }
+
+        .split-screen {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2px;
+            height: 100%;
+            background: #2d3748;
+        }
+
+        .view-panel {
+            background: linear-gradient(180deg, #f7fafc 0%, #edf2f7 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .view-label {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(22, 93, 255, 0.9);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 10;
+        }
+
+        .mixer-dt15 {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 400px;
+        }
+
+        .mixer-body {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 260px;
+            height: 200px;
+            background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e0 100%);
+            border-radius: 0 0 130px 130px;
+            border: 4px solid #a0aec0;
+            overflow: hidden;
+            box-shadow: inset 0 -20px 40px rgba(0,0,0,0.1);
+        }
+
+        .mixer-content-sitp {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 0;
+            background: linear-gradient(180deg, #8B7355 0%, #6B5344 50%, #4A3728 100%);
+            transition: height 0.5s ease;
+        }
+
+        .mixer-blade-dt15 {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            width: 140px;
+            height: 12px;
+            background: linear-gradient(90deg, #4A5568 0%, #2D3748 50%, #4A5568 100%);
+            border-radius: 6px;
+            transform-origin: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .mixer-blade-dt15.rotating {
+            animation: bladeRotate 0.8s linear infinite;
+        }
+
+        .mixer-vibrating {
+            animation: vibrateMix 0.1s linear infinite;
+        }
+
+        /* 微观视角 */
+        .micro-view {
+            position: absolute;
+            inset: 40px;
+            background: radial-gradient(circle at center, #1a202c 0%, #000000 100%);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .micro-particle {
+            position: absolute;
+            border-radius: 50%;
+            transition: all 0.5s ease;
+        }
+
+        .particle-tailings-micro {
+            background: radial-gradient(circle at 30% 30%, #9ca3af, #4a5568);
+            box-shadow: 0 0 10px rgba(156, 163, 175, 0.5);
+        }
+
+        .particle-curing-micro {
+            background: radial-gradient(circle at 30% 30%, #63b3ed, #3182ce);
+            box-shadow: 0 0 15px rgba(99, 179, 237, 0.6);
+        }
+
+        .particle-hydrated {
+            animation: hydrationReaction 1s ease-in-out infinite;
+            background: radial-gradient(circle at 30% 30%, #48bb78, #38a169);
+            box-shadow: 0 0 20px rgba(72, 187, 120, 0.8);
+        }
+
+        /* ==========================================
+           场景3：新拌浆体性能测试
+           ========================================== */
+        
+        @keyframes slumpFlow {
+            0% { 
+                width: 75px; 
+                height: 150px;
+                border-radius: 0;
+            }
+            50% {
+                width: 200px;
+                height: 80px;
+                border-radius: 50%;
+            }
+            100% { 
+                width: var(--final-width);
+                height: var(--final-height);
+                border-radius: 50%;
+            }
+        }
+
+        @keyframes measureScale {
+            0% { transform: scaleX(0); }
+            100% { transform: scaleX(1); }
+        }
+
+        .test-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 600px;
+            background: linear-gradient(180deg, #f0f0f0 0%, #e0e0e0 100%);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .slump-cone {
+            position: absolute;
+            top: 100px;
+            left: 200px;
+            width: 75px;
+            height: 150px;
+            background: linear-gradient(90deg, #c0c0c0 0%, #e0e0e0 50%, #c0c0c0 100%);
+            border: 3px solid #a0a0a0;
+            transform-origin: bottom center;
+        }
+
+        .slump-cone.lifting {
+            animation: slumpLift 2s ease-in-out forwards;
+        }
+
+        @keyframes slumpLift {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-200px); opacity: 0; }
+        }
+
+        .slurry-pancake {
+            position: absolute;
+            top: 220px;
+            left: 162.5px;
+            width: 0;
+            height: 0;
+            background: linear-gradient(180deg, #8B7355 0%, #6B5344 100%);
+            border-radius: 50%;
+            opacity: 0;
+        }
+
+        .slurry-pancake.spreading {
+            animation: slumpFlow 3s ease-out forwards;
+            opacity: 1;
+        }
+
+        .measurement-scale {
+            position: absolute;
+            bottom: 50px;
+            left: 50px;
+            right: 50px;
+            height: 40px;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                transparent 9%, #2d3748 9%, #2d3748 10%,
+                transparent 10%, transparent 19%, #2d3748 19%, #2d3748 20%,
+                transparent 20%, transparent 100%
+            );
+            background-size: 10% 100%;
+        }
+
+        /* ==========================================
+           场景4：硬化体性能测试
+           ========================================== */
+        
+        @keyframes compressionTest {
+            0% { transform: translateY(0) scaleY(1); }
+            80% { transform: translateY(100px) scaleY(0.95); }
+            100% { transform: translateY(120px) scaleY(0.3); }
+        }
+
+        @keyframes crackForm {
+            0% { opacity: 0; stroke-dashoffset: 100; }
+            100% { opacity: 1; stroke-dashoffset: 0; }
+        }
+
+        @keyframes pressureRise {
+            0% { width: 0; }
+            100% { width: var(--pressure-percent); }
+        }
+
+        .universal-machine {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 500px;
+        }
+
+        .machine-frame-u {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 320px;
+            height: 450px;
+            border-left: 15px solid #2d3748;
+            border-right: 15px solid #2d3748;
+            border-top: 15px solid #2d3748;
+        }
+
+        .upper-platen-u {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 30px;
+            background: linear-gradient(180deg, #4a5568 0%, #2d3748 100%);
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: top 0.1s linear;
+        }
+
+        .test-specimen {
+            position: absolute;
+            top: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70.7px;
+            height: 70.7px;
+            background: linear-gradient(135deg, #8B7355 0%, #6B5344 100%);
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .crack-svg {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+        }
+
+        .crack-svg.show {
+            animation: crackForm 0.5s ease forwards;
+        }
+
+        .pressure-gauge {
+            position: absolute;
+            right: -150px;
+            top: 100px;
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 50%;
+            border: 4px solid #2d3748;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pressure-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #165DFF;
+            font-family: 'Consolas', monospace;
+        }
+
+        .pressure-unit {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        /* ==========================================
+           场景5：水稳定性试验
+           ========================================== */
+        
+        @keyframes waterSoak {
+            0% { filter: brightness(1) saturate(1); }
+            50% { filter: brightness(0.9) saturate(0.8); }
+            100% { filter: brightness(0.85) saturate(0.7); }
+        }
+
+        @keyframes bubbleRiseSlow {
+            0% { transform: translateY(0) scale(1); opacity: 0.6; }
+            100% { transform: translateY(-100px) scale(0.3); opacity: 0; }
+        }
+
+        .comparison-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            padding: 60px;
+            height: 100%;
+        }
+
+        .test-group {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .group-label {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #165DFF;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .water-tank {
+            height: 300px;
+            background: linear-gradient(180deg, #bee3f8 0%, #4299e1 100%);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            border: 3px solid #3182ce;
+        }
+
+        .specimen-in-water {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #8B7355 0%, #6B5344 100%);
+            border-radius: 4px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .specimen-in-water.soaking {
+            animation: waterSoak 8s ease-in-out forwards;
+        }
+
+        .water-bubble {
+            position: absolute;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+            animation: bubbleRiseSlow 3s ease-out infinite;
+        }
+
+        /* ==========================================
+           场景6：试验结论可视化
+           ========================================== */
+        
+        .conclusion-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            padding: 60px;
+            height: 100%;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+
+        .optimal-solution {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #165DFF 0%, #0E4AD0 100%);
+            color: white;
+            padding: 30px 60px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(22,93,255,0.3);
+        }
+
+        /* 控制面板 */
+        .control-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(26, 32, 44, 0.98);
+            padding: 20px 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            z-index: 1000;
+            border-top: 2px solid #165DFF;
+        }
+
+        .control-btn {
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 14px;
+        }
+
+        .btn-play {
+            background: linear-gradient(135deg, #165DFF 0%, #0E4AD0 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(22,93,255,0.4);
+        }
+
+        .btn-play:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(22,93,255,0.5);
+        }
+
+        .btn-play:disabled {
+            background: #4a5568;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-nav {
+            background: transparent;
+            color: #e2e8f0;
+            border: 2px solid #4a5568;
+        }
+
+        .btn-nav:hover:not(:disabled) {
+            border-color: #165DFF;
+            color: #165DFF;
+        }
+
+        .btn-nav:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .scene-indicator {
+            display: flex;
+            gap: 8px;
+            margin: 0 20px;
+        }
+
+        .indicator-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4a5568;
+            transition: all 0.3s ease;
+        }
+
+        .indicator-dot.active {
+            background: #165DFF;
+            box-shadow: 0 0 10px #165DFF;
+        }
+
+        .indicator-dot.completed {
+            background: #48bb78;
+        }
+
+        /* 参数悬浮窗 */
+        .param-overlay {
+            position: absolute;
+            background: rgba(26, 32, 44, 0.95);
+            border: 1px solid #4a5568;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 12px;
+            color: #e2e8f0;
+            max-width: 300px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            z-index: 100;
+        }
+
+        .param-overlay h4 {
+            color: #165DFF;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .param-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+            font-family: 'Consolas', monospace;
+        }
+
+        /* 时间轴 */
+        .timeline-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: #2d3748;
+            z-index: 1001;
+        }
+
+        .timeline-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #165DFF 0%, #4B85FF 100%);
+            transition: width 0.5s ease;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1920px) {
+            .lab-viewport {
+                transform: scale(0.9);
+                transform-origin: top center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 时间轴进度条 -->
+    <div class="timeline-bar">
+        <div class="timeline-progress" id="timeline-progress" style="width: 0%"></div>
+    </div>
+
+    <!-- 主视口 -->
+    <div class="lab-viewport" id="lab-viewport">
+        
+        <!-- 场景1：原料配比设计 -->
+        <div class="scene active" id="scene-1">
+            <div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); text-align: center;">
+                <h2 style="font-size: 28px; color: #2d3748; font-weight: 700;">原料与配比设计</h2>
+                <p style="font-size: 14px; color: #718096; margin-top: 8px;">3因素3水平正交试验设计</p>
+            </div>
+
+            <!-- 原料展示 -->
+            <div class="raw-material" style="top: 120px; left: 80px;">
+                <div class="material-icon icon-tailings"></div>
+                <h3 style="font-size: 16px; font-weight: 700; color: #2d3748; text-align: center;">高硅铁尾矿粉</h3>
+                <div style="margin-top: 12px; font-size: 11px; color: #718096; text-align: center;">
+                    <div>SiO₂: 67.32%</div>
+                    <div>Fe₂O₃: 9.79%</div>
+                    <div>Al₂O₃: 8.44%</div>
+                </div>
+            </div>
+
+            <div class="raw-material" style="top: 120px; left: 320px;">
+                <div class="material-icon icon-curing"></div>
+                <h3 style="font-size: 16px; font-weight: 700; color: #2d3748; text-align: center;">TF型固化剂</h3>
+                <div style="margin-top: 12px; font-size: 11px; color: #718096; text-align: center;">
+                    <div>自主研发</div>
+                    <div>掺量: 8%/12%/16%</div>
+                </div>
+            </div>
+
+            <div class="raw-material" style="top: 120px; left: 560px;">
+                <div class="material-icon icon-cement"></div>
+                <h3 style="font-size: 16px; font-weight: 700; color: #2d3748; text-align: center;">P·O 42.5水泥</h3>
+                <div style="margin-top: 12px; font-size: 11px; color: #718096; text-align: center;">
+                    <div>普通硅酸盐</div>
+                    <div>对照组使用</div>
+                </div>
+            </div>
+
+            <div class="raw-material" style="top: 120px; left: 800px;">
+                <div class="material-icon icon-water"></div>
+                <h3 style="font-size: 16px; font-weight: 700; color: #2d3748; text-align: center;">自来水</h3>
+                <div style="margin-top: 12px; font-size: 11px; color: #718096; text-align: center;">
+                    <div>水耗: 30%/40%/50%</div>
+                </div>
+            </div>
+
+            <!-- 试验矩阵表 -->
+            <div class="matrix-table" style="top: 320px; left: 80px; width: 840px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td class="matrix-cell header">工况</td>
+                        <td class="matrix-cell header">固化剂掺量</td>
+                        <td class="matrix-cell header">水耗</td>
+                        <td class="matrix-cell header">搅拌方式</td>
+                        <td class="matrix-cell header">组别</td>
+                    </tr>
+                    <tr>
+                        <td class="matrix-cell">1-9</td>
+                        <td class="matrix-cell highlight">8%/12%/16%</td>
+                        <td class="matrix-cell highlight">30%/40%/50%</td>
+                        <td class="matrix-cell highlight">振动搅拌</td>
+                        <td class="matrix-cell">试验组</td>
+                    </tr>
+                    <tr style="background: #f7fafc;">
+                        <td class="matrix-cell">10</td>
+                        <td class="matrix-cell">8%</td>
+                        <td class="matrix-cell">40%</td>
+                        <td class="matrix-cell">普通搅拌</td>
+                        <td class="matrix-cell" style="color: #e53e3e;">对照组1</td>
+                    </tr>
+                    <tr>
+                        <td class="matrix-cell">11</td>
+                        <td class="matrix-cell">-</td>
+                        <td class="matrix-cell">40%</td>
+                        <td class="matrix-cell">振动搅拌</td>
+                        <td class="matrix-cell" style="color: #e53e3e;">对照组2(水泥)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- 参数标注 -->
+            <div class="param-label" style="position: absolute; top: 280px; left: 140px;">SiO₂ 67.32%</div>
+            <div class="param-label" style="position: absolute; top: 280px; left: 380px;">TF固化剂</div>
+            <div class="param-value" style="position: absolute; top: 580px; left: 400px;">9组试验 + 2组对照</div>
+        </div>
+
+        <!-- 场景2：振动搅拌工艺 -->
+        <div class="scene" id="scene-2">
+            <div class="split-screen">
+                <!-- 宏观视角 -->
+                <div class="view-panel">
+                    <div class="view-label">宏观视角 - DT15振动搅拌机</div>
+                    
+                    <div class="mixer-dt15" id="mixer-macro">
+                        <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 100px; background: linear-gradient(180deg, #165DFF 0%, #0E4AD0 100%); border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700;">
+                            DT15
+                        </div>
+                        <div class="mixer-blade-dt15" id="blade-macro" style="top: 120px;"></div>
+                        <div class="mixer-body" id="mixer-body-macro">
+                            <div class="mixer-content-sitp" id="mixer-content-macro"></div>
+                        </div>
+                    </div>
+
+                    <!-- 工艺参数 -->
+                    <div class="param-overlay" style="top: 80px; right: 40px;">
+                        <h4>振动搅拌工艺参数</h4>
+                        <div class="param-row"><span>干混时间:</span><span>5s</span></div>
+                        <div class="param-row"><span>加水时间:</span><span>10s</span></div>
+                        <div class="param-row"><span>总搅拌时间:</span><span>120s</span></div>
+                        <div class="param-row"><span>振动频率:</span><span>50Hz</span></div>
+                    </div>
+
+                    <!-- 时间线 -->
+                    <div style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; align-items: center;">
+                        <div style="text-align: center;" id="step-dry">
+                            <div style="width: 60px; height: 60px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">干混</div>
+                            <div style="font-size: 12px; color: #718096;">0-5s</div>
+                        </div>
+                        <div style="width: 40px; height: 2px; background: #cbd5e0;"></div>
+                        <div style="text-align: center;" id="step-water">
+                            <div style="width: 60px; height: 60px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">加水</div>
+                            <div style="font-size: 12px; color: #718096;">5-15s</div>
+                        </div>
+                        <div style="width: 40px; height: 2px; background: #cbd5e0;"></div>
+                        <div style="text-align: center;" id="step-mix">
+                            <div style="width: 60px; height: 60px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">搅拌</div>
+                            <div style="font-size: 12px; color: #718096;">15-120s</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 微观视角 -->
+                <div class="view-panel">
+                    <div class="view-label">微观视角 - 颗粒分散机理</div>
+                    
+                    <div class="micro-view" id="micro-view">
+                        <!-- 动态生成的颗粒 -->
+                    </div>
+
+                    <div class="param-overlay" style="top: 80px; right: 40px;">
+                        <h4>微观作用机理</h4>
+                        <div class="param-row"><span>尾矿颗粒:</span><span>50-200μm</span></div>
+                        <div class="param-row"><span>固化剂颗粒:</span><span>1-10μm</span></div>
+                        <div class="param-row"><span>分散均匀度:</span><span style="color: #48bb78;">提升40%</span></div>
+                        <div class="param-row"><span>水化反应:</span><span style="color: #48bb78;">更充分</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 场景3：新拌浆体性能测试 -->
+        <div class="scene" id="scene-3">
+            <div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); text-align: center;">
+                <h2 style="font-size: 28px; color: #2d3748; font-weight: 700;">新拌浆体性能测试</h2>
+                <p style="font-size: 14px; color: #718096; margin-top: 8px;">扩展度测试 + 湿密度测试</p>
+            </div>
+
+            <div class="test-area">
+                <!-- 坍落度测试 -->
+                <div style="position: absolute; left: 100px; top: 100px;">
+                    <h3 style="font-size: 16px; font-weight: 700; color: #2d3748; margin-bottom: 20px;">扩展度测试（坍落筒法）</h3>
+                    
+                    <div style="position: relative; width: 400px; height: 300px; background: #f0f0f0; border-radius: 8px;">
+                        <!-- 测试平台 -->
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 20px; background: #e0e0e0; border-radius: 0 0 8px 8px;"></div>
+                        
+                        <!-- 坍落筒 -->
+                        <div class="slump-cone" id="slump-cone">
+                            <div style="position: absolute; top: -30px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #718096; white-space: nowrap;">
+                                φ75×150mm
+                            </div>
+                        </div>
+                        
+                        <!-- 浆体圆饼 -->
+                        <div class="slurry-pancake" id="slurry-pancake" style="--final-width: 280px; --final-height: 60px;"></div>
+                        
+                        <!-- 测量尺 -->
+                        <div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 300px; height: 30px; background: repeating-linear-gradient(90deg, #2d3748 0px, #2d3748 2px, transparent 2px, transparent 28px); opacity: 0;"></div>
+                    </div>
+
+                    <div class="param-value" style="margin-top: 20px; display: inline-block;">
+                        扩展度: <span id="slump-value">280-600</span> mm
+                    </div>
+                </div>
+
+                <!-- 湿密度测试 -->
+                <div style="position: absolute; right: 100px; top: 100px;">
+                    <h3 style="font-size: 16px; font-weight: 700; color: #2d3748; margin-bottom: 20px;">湿密度测试（1000mL量筒法）</h3>
+                    
+                    <div style="position: relative; width: 200px; height: 300px; margin: 0 auto;">
+                        <!-- 量筒 -->
+                        <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 250px; background: linear-gradient(90deg, rgba(200,220,255,0.3) 0%, rgba(255,255,255,0.1) 50%, rgba(200,220,255,0.3) 100%); border: 3px solid #a0aec0; border-radius: 0 0 8px 8px;">
+                            <!-- 刻度 -->
+                            <div style="position: absolute; right: 0; top: 0; bottom: 0; width: 30px; background: repeating-linear-gradient(0deg, #718096 0px, #718096 1px, transparent 1px, transparent 25px);"></div>
+                            <!-- 浆体 -->
+                            <div id="density-slurry" style="position: absolute; bottom: 0; left: 0; right: 0; height: 0; background: linear-gradient(180deg, #8B7355 0%, #6B5344 100%); transition: height 1s ease;"></div>
+                        </div>
+                    </div>
+
+                    <div class="param-value" style="margin-top: 20px; display: inline-block;">
+                        湿密度: <span id="density-value">1.9-2.1</span> g/cm³
+                    </div>
+                </div>
+
+                <!-- 结果曲线 -->
+                <div style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 700px; height: 200px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+                    <h4 style="font-size: 14px; font-weight: 600; color: #2d3748; margin-bottom: 10px;">水耗对浆体扩展度的影响</h4>
+                    <canvas id="slump-chart" width="660" height="140"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 场景4：硬化体性能测试 -->
+        <div class="scene" id="scene-4">
+            <div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); text-align: center;">
+                <h2 style="font-size: 28px; color: #2d3748; font-weight: 700;">无侧限抗压强度测试</h2>
+                <p style="font-size: 14px; color: #718096; margin-top: 8px;">万能试验机 | 加载速率 1mm/s</p>
+            </div>
+
+            <div class="universal-machine">
+                <div class="machine-frame-u"></div>
+                <div class="upper-platen-u" id="upper-platen-u"></div>
+                
+                <div class="test-specimen" id="test-specimen-u">
+                    <svg class="crack-svg" id="crack-svg-u" viewBox="0 0 70 70">
+                        <line x1="20" y1="20" x2="50" y2="50" stroke="#1a202c" stroke-width="2" stroke-dasharray="5,5"/>
+                        <line x1="50" y1="20" x2="20" y2="50" stroke="#1a202c" stroke-width="2" stroke-dasharray="5,5"/>
+                        <line x1="35" y1="10" x2="35" y2="60" stroke="#1a202c" stroke-width="2" stroke-dasharray="5,5"/>
+                    </svg>
+                </div>
+
+                <div class="pressure-gauge">
+                    <div class="pressure-value" id="pressure-value-u">0.00</div>
+                    <div class="pressure-unit">kN</div>
+                </div>
+            </div>
+
+            <!-- 测试结果面板 -->
+            <div style="position: absolute; right: 80px; top: 150px; width: 320px;">
+                <div style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                    <h3 style="font-size: 18px; font-weight: 700; color: #2d3748; margin-bottom: 20px;">核心测试数据</h3>
+                    
+                    <div style="margin-bottom: 16px; padding: 16px; background: #f7fafc; border-radius: 8px; border-left: 4px solid #165DFF;">
+                        <div style="font-size: 12px; color: #718096;">8% TF固化剂 + 振动搅拌</div>
+                        <div style="font-size: 14px; font-weight: 600; color: #2d3748; margin-top: 4px;">
+                            7d: 0.89 MPa | 28d: 1.83 MPa
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 16px; padding: 16px; background: #f7fafc; border-radius: 8px; border-left: 4px solid #48bb78;">
+                        <div style="font-size: 12px; color: #718096;">16% TF固化剂 + 振动搅拌</div>
+                        <div style="font-size: 14px; font-weight: 600; color: #2d3748; margin-top: 4px;">
+                            28d: 3.68 MPa
+                        </div>
+                    </div>
+
+                    <div style="padding: 12px; background: #c6f6d5; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #22543d;">满足工程要求</div>
+                        <div style="font-size: 16px; font-weight: 700; color: #22543d;">7d强度 ≥ 0.6 MPa</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 龄期选择 -->
+            <div style="position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px;">
+                <button class="age-btn-switch active" onclick="setTestAge(7)" id="btn-age-7">7d</button>
+                <button class="age-btn-switch" onclick="setTestAge(28)" id="btn-age-28">28d</button>
+            </div>
+
+            <style>
+                .age-btn-switch {
+                    padding: 12px 32px;
+                    border: 2px solid #165DFF;
+                    background: white;
+                    color: #165DFF;
+                    border-radius: 25px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                }
+                .age-btn-switch.active, .age-btn-switch:hover {
+                    background: #165DFF;
+                    color: white;
+                }
+            </style>
+        </div>
+
+        <!-- 场景5：水稳定性试验 -->
+        <div class="scene" id="scene-5">
+            <div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); text-align: center;">
+                <h2 style="font-size: 28px; color: #2d3748; font-weight: 700;">水稳定性试验对比</h2>
+                <p style="font-size: 14px; color: #718096; margin-top: 8px;">28d龄期试块 | 20℃清水浸泡24h</p>
+            </div>
+
+            <div class="comparison-container">
+                <!-- 振动搅拌实验组 -->
+                <div class="test-group">
+                    <div class="group-label" style="background: #165DFF;">振动搅拌实验组</div>
+                    <div class="water-tank" id="tank-vibration">
+                        <div class="specimen-in-water soaking" id="specimen-vibration"></div>
+                    </div>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <div style="font-size: 14px; color: #2d3748; font-weight: 600;">TF固化剂 + 振动搅拌</div>
+                        <div class="param-value" style="margin-top: 12px; display: inline-block;">
+                            强度损失率: 5.5%
+                        </div>
+                        <div style="margin-top: 8px; font-size: 12px; color: #48bb78;">优异的水稳定性</div>
+                    </div>
+                </div>
+
+                <!-- 普通搅拌对照组 -->
+                <div class="test-group">
+                    <div class="group-label" style="background: #e53e3e;">普通搅拌对照组</div>
+                    <div class="water-tank" id="tank-normal">
+                        <div class="specimen-in-water soaking" id="specimen-normal"></div>
+                    </div>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <div style="font-size: 14px; color: #2d3748; font-weight: 600;">TF固化剂 + 普通搅拌</div>
+                        <div class="param-value" style="margin-top: 12px; display: inline-block;">
+                            强度损失率: 12.3%
+                        </div>
+                        <div style="margin-top: 8px; font-size: 12px; color: #e53e3e;">水稳定性较差</div>
+                    </div>
+                </div>
+
+                <!-- 水泥固化剂对照组 -->
+                <div class="test-group">
+                    <div class="group-label" style="background: #d69e2e;">水泥固化剂对照组</div>
+                    <div class="water-tank" id="tank-cement">
+                        <div class="specimen-in-water soaking" id="specimen-cement"></div>
+                    </div>
+                    <div style="margin-top: 20px; text-align: center;">
+                        <div style="font-size: 14px; color: #2d3748; font-weight: 600;">P·O 42.5水泥 + 振动搅拌</div>
+                        <div class="param-value" style="margin-top: 12px; display: inline-block;">
+                            强度损失率: 8.7%
+                        </div>
+                        <div style="margin-top: 8px; font-size: 12px; color: #d69e2e;">△ 中等水稳定性</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 浸泡时间轴 -->
+            <div style="position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 30px;">
+                <div style="text-align: center;">
+                    <div style="width: 80px; height: 4px; background: #165DFF; margin-bottom: 8px;"></div>
+                    <div style="font-size: 12px; color: #718096;">0h</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="width: 80px; height: 4px; background: #cbd5e0; margin-bottom: 8px;"></div>
+                    <div style="font-size: 12px; color: #718096;">8h</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="width: 80px; height: 4px; background: #cbd5e0; margin-bottom: 8px;"></div>
+                    <div style="font-size: 12px; color: #718096;">16h</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="width: 80px; height: 4px; background: #48bb78; margin-bottom: 8px;"></div>
+                    <div style="font-size: 12px; color: #718096;">24h</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 场景6：试验结论可视化 -->
+        <div class="scene" id="scene-6">
+            <div style="position: absolute; top: 30px; left: 50%; transform: translateX(-50%); text-align: center;">
+                <h2 style="font-size: 28px; color: #2d3748; font-weight: 700;">试验结论与工程应用</h2>
+                <p style="font-size: 14px; color: #718096; margin-top: 8px;">性能对比矩阵 + 最优方案推荐</p>
+            </div>
+
+            <div class="conclusion-grid">
+                <!-- 性能对比矩阵 -->
+                <div class="chart-container">
+                    <h3 style="font-size: 16px; font-weight: 700; color: #2d3748; margin-bottom: 20px;">振动搅拌 vs 普通搅拌性能对比</h3>
+                    <canvas id="compare-chart-1" width="400" height="280"></canvas>
+                </div>
+
+                <!-- 固化剂掺量影响 -->
+                <div class="chart-container">
+                    <h3 style="font-size: 16px; font-weight: 700; color: #2d3748; margin-bottom: 20px;">固化剂掺量对强度的影响</h3>
+                    <canvas id="compare-chart-2" width="400" height="280"></canvas>
+                </div>
+            </div>
+
+            <!-- 最优方案 -->
+            <div class="optimal-solution">
+                <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">最优工程方案</div>
+                <div style="font-size: 24px; font-weight: 700; margin-bottom: 12px;">8% TF固化剂 + 振动搅拌120s</div>
+                <div style="display: flex; gap: 40px; justify-content: center;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 32px; font-weight: 700;">0.89 MPa</div>
+                        <div style="font-size: 12px; opacity: 0.8;">7d抗压强度 ≥ 0.6 MPa</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 32px; font-weight: 700;">280-600 mm</div>
+                        <div style="font-size: 12px; opacity: 0.8;">扩展度 ≥ 250 mm</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 32px; font-weight: 700;">5.5%</div>
+                        <div style="font-size: 12px; opacity: 0.8;">强度损失率（水稳定性）</div>
+                    </div>
+                </div>
+                <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2); font-size: 14px; opacity: 0.9;">
+                    满足采空区充填工程应用要求
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="control-panel">
+        <button class="control-btn btn-nav" id="btn-prev" onclick="prevScene()" disabled>上一步</button>
+        
+        <div class="scene-indicator">
+            <div class="indicator-dot active" data-scene="1"></div>
+            <div class="indicator-dot" data-scene="2"></div>
+            <div class="indicator-dot" data-scene="3"></div>
+            <div class="indicator-dot" data-scene="4"></div>
+            <div class="indicator-dot" data-scene="5"></div>
+            <div class="indicator-dot" data-scene="6"></div>
+        </div>
+
+        <button class="control-btn btn-play" id="btn-play" onclick="playAnimation()">
+            <svg style="width: 20px; height: 20px; display: inline; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            播放动画
+        </button>
+
+        <button class="control-btn btn-nav" id="btn-next" onclick="nextScene()" disabled>下一步</button>
+        
+        <button class="control-btn btn-nav" onclick="resetExperiment()">重置</button>
+    </div>
+
+    <script>
+        // ==========================================
+        // 全局状态管理
+        // ==========================================
+        let currentScene = 1;
+        const totalScenes = 6;
+        let isAnimating = false;
+        let animationCompleted = false;
+        let currentTestAge = 7;
+
+        // 试验数据 - 可修改
+        const EXPERIMENT_DATA = {
+            slumpData: {
+                waterConsumption: [30, 40, 50],
+                slumpValues: [280, 450, 600]
+            },
+            strengthData: {
+                curing7d: [0.45, 0.89, 1.35],
+                curing28d: [0.92, 1.83, 3.68]
+            },
+            optimal: {
+                curingAgent: 8,
+                mixingTime: 120,
+                strength7d: 0.89,
+                strength28d: 1.83,
+                slump: 450,
+                density: 2.05
+            }
+        };
+
+        // ==========================================
+        // 场景切换
+        // ==========================================
+        function showScene(sceneNum) {
+            // 隐藏所有场景
+            document.querySelectorAll('.scene').forEach(scene => {
+                scene.classList.remove('active');
+            });
+            
+            // 显示目标场景
+            document.getElementById(`scene-${sceneNum}`).classList.add('active');
+            
+            // 更新指示器
+            document.querySelectorAll('.indicator-dot').forEach((dot, i) => {
+                dot.classList.remove('active', 'completed');
+                if (i + 1 < sceneNum) dot.classList.add('completed');
+                else if (i + 1 === sceneNum) dot.classList.add('active');
+            });
+            
+            // 更新进度条
+            document.getElementById('timeline-progress').style.width = `${(sceneNum / totalScenes) * 100}%`;
+            
+            // 更新按钮状态
+            document.getElementById('btn-prev').disabled = sceneNum === 1;
+            document.getElementById('btn-next').disabled = !animationCompleted;
+            
+            currentScene = sceneNum;
+            animationCompleted = false;
+            isAnimating = false;
+            
+            // 重置播放按钮
+            const playBtn = document.getElementById('btn-play');
+            playBtn.disabled = false;
+            playBtn.innerHTML = `
+                <svg style="width: 20px; height: 20px; display: inline; margin-right: 8px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                播放动画
+            `;
+        }
+
+        function nextScene() {
+            if (currentScene < totalScenes) {
+                showScene(currentScene + 1);
+            }
+        }
+
+        function prevScene() {
+            if (currentScene > 1) {
+                showScene(currentScene - 1);
+            }
+        }
+
+        // ==========================================
+        // 动画播放控制
+        // ==========================================
+        function playAnimation() {
+            if (isAnimating) return;
+            isAnimating = true;
+            
+            const playBtn = document.getElementById('btn-play');
+            playBtn.disabled = true;
+            playBtn.innerHTML = '播放中...';
+            
+            switch(currentScene) {
+                case 1: playScene1(); break;
+                case 2: playScene2(); break;
+                case 3: playScene3(); break;
+                case 4: playScene4(); break;
+                case 5: playScene5(); break;
+                case 6: playScene6(); break;
+            }
+        }
+
+        // 场景1：原料配比设计动画
+        function playScene1() {
+            const materials = document.querySelectorAll('.raw-material');
+            materials.forEach((mat, i) => {
+                setTimeout(() => {
+                    mat.style.transform = 'translateY(-10px) scale(1.05)';
+                    setTimeout(() => {
+                        mat.style.transform = 'translateY(0) scale(1)';
+                    }, 300);
+                }, i * 200);
+            });
+            
+            // 矩阵高亮动画
+            const cells = document.querySelectorAll('.matrix-cell.highlight');
+            cells.forEach((cell, i) => {
+                setTimeout(() => {
+                    cell.style.background = 'rgba(22, 93, 255, 0.4)';
+                    setTimeout(() => {
+                        cell.style.background = '';
+                    }, 500);
+                }, 800 + i * 150);
+            });
+            
+            setTimeout(() => {
+                animationCompleted = true;
+                document.getElementById('btn-next').disabled = false;
+                document.getElementById('btn-play').innerHTML = '播放完成';
+            }, 2000);
+        }
+
+        // 场景2：振动搅拌工艺动画
+        function playScene2() {
+            const macroMixer = document.getElementById('mixer-macro');
+            const blade = document.getElementById('blade-macro');
+            const content = document.getElementById('mixer-content-macro');
+            const microView = document.getElementById('micro-view');
+            
+            // 宏观视角动画
+            // 干混阶段
+            document.getElementById('step-dry').querySelector('div').style.background = '#165DFF';
+            document.getElementById('step-dry').querySelector('div').style.color = 'white';
+            
+            setTimeout(() => {
+                // 加水阶段
+                document.getElementById('step-water').querySelector('div').style.background = '#165DFF';
+                document.getElementById('step-water').querySelector('div').style.color = 'white';
+                content.style.height = '60%';
+                
+                setTimeout(() => {
+                    // 搅拌阶段
+                    document.getElementById('step-mix').querySelector('div').style.background = '#165DFF';
+                    document.getElementById('step-mix').querySelector('div').style.color = 'white';
+                    
+                    macroMixer.classList.add('mixer-vibrating');
+                    blade.classList.add('rotating');
+                    
+                    // 微观视角 - 生成颗粒
+                    generateMicroParticles();
+                    
+                    setTimeout(() => {
+                        macroMixer.classList.remove('mixer-vibrating');
+                        blade.classList.remove('rotating');
+                        animationCompleted = true;
+                        document.getElementById('btn-next').disabled = false;
+                        document.getElementById('btn-play').innerHTML = '播放完成';
+                    }, 3000);
+                }, 1000);
+            }, 1000);
+        }
+
+        // 生成微观颗粒
+        function generateMicroParticles() {
+            const container = document.getElementById('micro-view');
+            container.innerHTML = '';
+            
+            // 生成尾矿颗粒
+            for (let i = 0; i < 15; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'micro-particle particle-tailings-micro';
+                particle.style.width = `${20 + Math.random() * 30}px`;
+                particle.style.height = particle.style.width;
+                particle.style.left = `${Math.random() * 80}%`;
+                particle.style.top = `${Math.random() * 80}%`;
+                particle.style.setProperty('--tx', `${(Math.random() - 0.5) * 100}px`);
+                particle.style.setProperty('--ty', `${(Math.random() - 0.5) * 100}px`);
+                particle.style.animation = `particleDisperse 2s ease forwards`;
+                container.appendChild(particle);
+            }
+            
+            // 生成固化剂颗粒
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.className = 'micro-particle particle-curing-micro';
+                    particle.style.width = `${8 + Math.random() * 12}px`;
+                    particle.style.height = particle.style.width;
+                    particle.style.left = `${Math.random() * 80}%`;
+                    particle.style.top = `${Math.random() * 80}%`;
+                    container.appendChild(particle);
+                    
+                    // 水化反应
+                    setTimeout(() => {
+                        particle.classList.add('particle-hydrated');
+                    }, 1000);
+                }, i * 100);
+            }
+        }
+
+        // 场景3：新拌浆体性能测试动画
+        function playScene3() {
+            const cone = document.getElementById('slump-cone');
+            const pancake = document.getElementById('slurry-pancake');
+            const densitySlurry = document.getElementById('density-slurry');
+            
+            // 坍落度测试
+            setTimeout(() => {
+                cone.classList.add('lifting');
+                
+                setTimeout(() => {
+                    pancake.classList.add('spreading');
+                    
+                    // 密度测试
+                    densitySlurry.style.height = '80%';
+                    
+                    // 绘制曲线
+                    setTimeout(() => {
+                        drawSlumpChart();
+                        animationCompleted = true;
+                        document.getElementById('btn-next').disabled = false;
+                        document.getElementById('btn-play').innerHTML = '播放完成';
+                    }, 1500);
+                }, 1000);
+            }, 500);
+        }
+
+        // 绘制扩展度曲线
+        function drawSlumpChart() {
+            const canvas = document.getElementById('slump-chart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 坐标轴
+            ctx.strokeStyle = '#4a5568';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(40, 20);
+            ctx.lineTo(40, 100);
+            ctx.lineTo(620, 100);
+            ctx.stroke();
+            
+            // 数据点
+            const data = EXPERIMENT_DATA.slumpData;
+            const xStep = 580 / (data.waterConsumption.length - 1);
+            
+            ctx.strokeStyle = '#165DFF';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            data.waterConsumption.forEach((x, i) => {
+                const y = 100 - (data.slumpValues[i] / 600) * 80;
+                const px = 40 + i * xStep;
+                
+                if (i === 0) ctx.moveTo(px, y);
+                else ctx.lineTo(px, y);
+                
+                // 数据点
+                ctx.fillStyle = '#165DFF';
+                ctx.beginPath();
+                ctx.arc(px, y, 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 数值标注
+                ctx.fillStyle = '#2d3748';
+                ctx.font = '12px sans-serif';
+                ctx.fillText(`${data.slumpValues[i]}mm`, px - 20, y - 15);
+            });
+            ctx.stroke();
+            
+            // 标签
+            ctx.fillStyle = '#718096';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('水耗(%)', 580, 120);
+            ctx.save();
+            ctx.translate(15, 60);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('扩展度(mm)', 0, 0);
+            ctx.restore();
+        }
+
+        // 场景4：抗压强度测试动画
+        function playScene4() {
+            const platen = document.getElementById('upper-platen-u');
+            const specimen = document.getElementById('test-specimen-u');
+            const crackSvg = document.getElementById('crack-svg-u');
+            const pressureValue = document.getElementById('pressure-value-u');
+            
+            const targetLoad = currentTestAge === 7 ? 22.3 : 45.8; // kN
+            let currentLoad = 0;
+            const increment = targetLoad / 100;
+            
+            const interval = setInterval(() => {
+                currentLoad += increment;
+                
+                // 压板下降
+                platen.style.top = `${80 + (currentLoad / targetLoad) * 100}px`;
+                
+                // 压力值更新
+                pressureValue.textContent = currentLoad.toFixed(2);
+                
+                if (currentLoad >= targetLoad) {
+                    clearInterval(interval);
+                    
+                    // 破坏动画
+                    crackSvg.classList.add('show');
+                    specimen.style.transform = 'translateX(-50%) scaleY(0.7)';
+                    
+                    setTimeout(() => {
+                        animationCompleted = true;
+                        document.getElementById('btn-next').disabled = false;
+                        document.getElementById('btn-play').innerHTML = '播放完成';
+                    }, 500);
+                }
+            }, 30);
+        }
+
+        function setTestAge(age) {
+            currentTestAge = age;
+            document.querySelectorAll('#scene-4 .age-btn-switch').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`btn-age-${age}`).classList.add('active');
+        }
+
+        // 场景5：水稳定性试验动画
+        function playScene5() {
+            const specimens = document.querySelectorAll('.specimen-in-water');
+            const tanks = document.querySelectorAll('.water-tank');
+            
+            specimens.forEach((spec, i) => {
+                setTimeout(() => {
+                    spec.classList.add('soaking');
+                    
+                    // 生成气泡
+                    const tank = tanks[i];
+                    for (let j = 0; j < 8; j++) {
+                        setTimeout(() => {
+                            const bubble = document.createElement('div');
+                            bubble.className = 'water-bubble';
+                            bubble.style.width = `${4 + Math.random() * 8}px`;
+                            bubble.style.height = bubble.style.width;
+                            bubble.style.left = `${20 + Math.random() * 60}%`;
+                            bubble.style.bottom = '20%';
+                            tank.appendChild(bubble);
+                            setTimeout(() => bubble.remove(), 3000);
+                        }, j * 200);
+                    }
+                }, i * 300);
+            });
+            
+            setTimeout(() => {
+                animationCompleted = true;
+                document.getElementById('btn-next').disabled = false;
+                document.getElementById('btn-play').innerHTML = '播放完成';
+            }, 3000);
+        }
+
+        // 场景6：试验结论可视化
+        function playScene6() {
+            drawComparisonCharts();
+            
+            setTimeout(() => {
+                animationCompleted = true;
+                document.getElementById('btn-next').disabled = false;
+                document.getElementById('btn-play').innerHTML = '播放完成';
+            }, 1500);
+        }
+
+        // 绘制对比图表
+        function drawComparisonCharts() {
+            // 图表1：振动搅拌 vs 普通搅拌
+            const ctx1 = document.getElementById('compare-chart-1').getContext('2d');
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['7d强度(MPa)', '28d强度(MPa)', '水稳定性(%)'],
+                    datasets: [{
+                        label: '振动搅拌',
+                        data: [0.89, 1.83, 94.5],
+                        backgroundColor: '#165DFF'
+                    }, {
+                        label: '普通搅拌',
+                        data: [0.62, 1.28, 87.7],
+                        backgroundColor: '#e53e3e'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+            
+            // 图表2：固化剂掺量影响
+            const ctx2 = document.getElementById('compare-chart-2').getContext('2d');
+            new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: ['8%', '12%', '16%'],
+                    datasets: [{
+                        label: '7d强度',
+                        data: EXPERIMENT_DATA.strengthData.curing7d,
+                        borderColor: '#165DFF',
+                        backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                        fill: true
+                    }, {
+                        label: '28d强度',
+                        data: EXPERIMENT_DATA.strengthData.curing28d,
+                        borderColor: '#48bb78',
+                        backgroundColor: 'rgba(72, 187, 120, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // ==========================================
+        // 重置实验
+        // ==========================================
+        function resetExperiment() {
+            showScene(1);
+            
+            // 重置所有动画元素
+            document.querySelectorAll('.raw-material').forEach(el => {
+                el.style.transform = '';
+            });
+            
+            document.querySelectorAll('.mixer-blade-dt15').forEach(el => {
+                el.classList.remove('rotating');
+            });
+            
+            document.querySelectorAll('.mixer-content-sitp').forEach(el => {
+                el.style.height = '0';
+            });
+            
+            document.getElementById('slump-cone').classList.remove('lifting');
+            document.getElementById('slurry-pancake').classList.remove('spreading');
+            document.getElementById('density-slurry').style.height = '0';
+            
+            document.getElementById('upper-platen-u').style.top = '80px';
+            document.getElementById('test-specimen-u').style.transform = 'translateX(-50%)';
+            document.getElementById('crack-svg-u').classList.remove('show');
+            document.getElementById('pressure-value-u').textContent = '0.00';
+            
+            document.querySelectorAll('.specimen-in-water').forEach(el => {
+                el.classList.remove('soaking');
+            });
+            
+            document.getElementById('micro-view').innerHTML = '';
+        }
+
+        // 初始化
+        showScene(1);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>铁尾矿基胶结充填体微观结构3D可视化</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: radial-gradient(ellipse at center, #002244 0%, #001122 50%, #000811 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* 科研蓝主色调变量 */
+        :root {
+            --sci-blue: #165DFF;
+            --sci-blue-light: #40A9FF;
+            --sci-blue-dark: #0E3FAD;
+        }
+        
+        /* 3D画布容器 */
+        #canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* 顶部标题栏 */
+        .header-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.8) 100%);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(22, 93, 255, 0.3);
+            padding: 16px 24px;
+        }
+        
+        /* 龄期切换按钮组 */
+        .age-controls {
+            position: absolute;
+            bottom: 100px;
+            right: 24px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .age-btn {
+            width: 80px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid rgba(22, 93, 255, 0.5);
+            background: rgba(15, 23, 42, 0.8);
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(4px);
+        }
+        
+        .age-btn:hover {
+            border-color: var(--sci-blue);
+            color: white;
+            transform: translateX(-4px);
+        }
+        
+        .age-btn.active {
+            background: linear-gradient(135deg, var(--sci-blue) 0%, var(--sci-blue-light) 100%);
+            border-color: var(--sci-blue);
+            color: white;
+            box-shadow: 0 4px 16px rgba(22, 93, 255, 0.5);
+        }
+        
+        /* 操作指引 */
+        .controls-hint {
+            position: absolute;
+            bottom: 24px;
+            left: 24px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(22, 93, 255, 0.3);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+        
+        .controls-hint span {
+            color: var(--sci-blue-light);
+            font-weight: 500;
+        }
+        
+        /* 信息弹窗 */
+        .info-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            z-index: 200;
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.98) 0%, rgba(15, 23, 42, 0.98) 100%);
+            border: 1px solid rgba(22, 93, 255, 0.4);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 420px;
+            width: 90%;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(22, 93, 255, 0.2);
+        }
+        
+        .info-modal.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        .modal-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(22, 93, 255, 0.2);
+        }
+        
+        .modal-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .modal-icon.tailings {
+            background: linear-gradient(135deg, #4B5563 0%, #6B7280 100%);
+        }
+        
+        .modal-icon.csh {
+            background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+        }
+        
+        .modal-icon.aft {
+            background: linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%);
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: white;
+        }
+        
+        .modal-subtitle {
+            font-size: 12px;
+            color: var(--sci-blue-light);
+            margin-top: 2px;
+        }
+        
+        .modal-content {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        
+        .modal-content p {
+            margin-bottom: 12px;
+        }
+        
+        .modal-highlight {
+            background: linear-gradient(90deg, rgba(22, 93, 255, 0.2) 0%, transparent 100%);
+            border-left: 3px solid var(--sci-blue);
+            padding: 8px 12px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        /* 结构图例 */
+        .legend-panel {
+            position: absolute;
+            top: 100px;
+            left: 24px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(22, 93, 255, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            min-width: 180px;
+        }
+        
+        .legend-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(22, 93, 255, 0.2);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            padding: 6px 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        
+        .legend-item:hover {
+            background: rgba(22, 93, 255, 0.1);
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+        
+        .legend-text {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        /* 当前龄期信息 */
+        .age-info {
+            position: absolute;
+            top: 100px;
+            right: 24px;
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(22, 93, 255, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            min-width: 200px;
+        }
+        
+        .age-info-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 12px;
+        }
+        
+        .age-info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        
+        .age-info-label {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .age-info-value {
+            color: var(--sci-blue-light);
+            font-weight: 600;
+        }
+        
+        /* 加载动画 */
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 300;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(22, 93, 255, 0.2);
+            border-top-color: var(--sci-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            margin-top: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* 返回按钮 */
+        .back-btn {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            z-index: 101;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载遮罩 -->
+    <div id="loading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在构建微观结构模型...</div>
+    </div>
+    
+    <!-- 3D画布容器 -->
+    <div id="canvas-container"></div>
+    
+    <!-- 返回按钮 -->
+    <a href="index.html" class="back-btn">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        返回首页
+    </a>
+    
+    <!-- 顶部标题栏 -->
+    <div class="header-bar">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-blue-400 flex items-center justify-center">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white">铁尾矿基胶结充填体微观结构3D可视化</h1>
+                    <p class="text-sm text-blue-300">基于TF固化剂激发体系的水化产物演变</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-gray-400">当前龄期</div>
+                <div id="current-age-display" class="text-2xl font-bold text-blue-400">7d</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 结构图例 -->
+    <div class="legend-panel">
+        <div class="legend-title">结构图例（点击了解详情）</div>
+        <div class="legend-item" onclick="showModal('tailings')">
+                <div class="legend-color" style="background: linear-gradient(135deg, #A8B0B8, #C0C8D0);"></div>
+                <span class="legend-text">铁尾矿骨料</span>
+            </div>
+            <div class="legend-item" onclick="showModal('csh')">
+                <div class="legend-color" style="background: linear-gradient(135deg, #98FB98, #90EE90);"></div>
+                <span class="legend-text">C-S-H凝胶</span>
+            </div>
+            <div class="legend-item" onclick="showModal('aft')">
+                <div class="legend-color" style="background: linear-gradient(135deg, #8B5CF6, #7C3AED);"></div>
+                <span class="legend-text">钙矾石晶体</span>
+            </div>
+    </div>
+    
+    <!-- 当前龄期信息 -->
+    <div class="age-info">
+        <div class="age-info-title">微观结构特征</div>
+        <div class="age-info-item">
+            <span class="age-info-label">水化程度</span>
+            <span id="hydration-level" class="age-info-value">中等</span>
+        </div>
+        <div class="age-info-item">
+            <span class="age-info-label">孔隙率</span>
+            <span id="porosity-level" class="age-info-value">中等</span>
+        </div>
+        <div class="age-info-item">
+            <span class="age-info-label">结构致密性</span>
+            <span id="density-level" class="age-info-value">中等</span>
+        </div>
+        <div class="age-info-item">
+            <span class="age-info-label">抗压强度</span>
+            <span id="strength-level" class="age-info-value">0.89 MPa</span>
+        </div>
+    </div>
+    
+    <!-- 龄期切换按钮 -->
+    <div class="age-controls">
+        <button class="age-btn" data-age="3d" onclick="switchAge('3d')">3d</button>
+        <button class="age-btn active" data-age="7d" onclick="switchAge('7d')">7d</button>
+        <button class="age-btn" data-age="28d" onclick="switchAge('28d')">28d</button>
+    </div>
+    
+    <!-- 操作指引 -->
+    <div class="controls-hint">
+        <span>左键旋转</span> | <span>滚轮缩放</span> | <span>右键平移</span> | <span>点击结构查看详情</span>
+    </div>
+    
+    <!-- 信息弹窗 -->
+    <div id="info-modal" class="info-modal">
+        <button class="modal-close" onclick="closeModal()">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+        <div class="modal-header">
+            <div id="modal-icon" class="modal-icon tailings"></div>
+            <div>
+                <div id="modal-title" class="modal-title">铁尾矿骨料</div>
+                <div id="modal-subtitle" class="modal-subtitle">Iron Tailings Aggregate</div>
+            </div>
+        </div>
+        <div id="modal-content" class="modal-content">
+            <!-- 动态内容 -->
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // 全局变量与配置
+        // ============================================
+        
+        let scene, camera, renderer, controls;
+        let tailingsGroup, cshGroup, aftGroup;
+        let raycaster, mouse;
+        let currentAge = '7d';
+        
+        // 材质定义 - FE-SEM超写实二次电子成像质感
+        const materials = {
+            // 铁尾矿骨料材质 - 浅灰色哑光质感，亚棱角-棱角状硅质/铁质矿物
+            tailings: new THREE.MeshStandardMaterial({
+                color: 0xA8B0B8,
+                roughness: 0.92,
+                metalness: 0.08,
+                flatShading: false
+            }),
+            // C-S-H凝胶材质 - 嫩绿色细腻多孔絮状质感，纳米颗粒团聚体
+            csh: new THREE.MeshStandardMaterial({
+                color: 0x98FB98,
+                roughness: 0.88,
+                metalness: 0.02,
+                transparent: true,
+                opacity: 0.85,
+                emissive: 0x90EE90,
+                emissiveIntensity: 0.06
+            }),
+            // 钙矾石晶体材质 - 深紫色半透明单晶质感，六方长棒状
+            aft: new THREE.MeshPhysicalMaterial({
+                color: 0x7C3AED,
+                roughness: 0.15,
+                metalness: 0.05,
+                transparent: true,
+                opacity: 0.88,
+                transmission: 0.25,
+                thickness: 0.5,
+                clearcoat: 0.3,
+                clearcoatRoughness: 0.1,
+                emissive: 0x6D28D9,
+                emissiveIntensity: 0.08
+            })
+        };
+        
+        // 龄期配置参数
+        const ageConfigs = {
+            '3d': {
+                tailings: {
+                    count: 20,
+                    sizeMin: 0.8,
+                    sizeMax: 1.5,
+                    spacing: 2.0
+                },
+                csh: {
+                    count: 12,
+                    sizeMin: 0.4,
+                    sizeMax: 0.8,
+                    coverage: 0.3
+                },
+                aft: {
+                    count: 8,
+                    lengthMin: 0.8,
+                    lengthMax: 1.5
+                },
+                info: {
+                    hydration: '低',
+                    porosity: '高',
+                    density: '低',
+                    strength: '0.35 MPa'
+                }
+            },
+            '7d': {
+                tailings: {
+                    count: 25,
+                    sizeMin: 0.8,
+                    sizeMax: 1.5,
+                    spacing: 1.5
+                },
+                csh: {
+                    count: 20,
+                    sizeMin: 0.4,
+                    sizeMax: 0.9,
+                    coverage: 0.6
+                },
+                aft: {
+                    count: 12,
+                    lengthMin: 1.0,
+                    lengthMax: 2.0
+                },
+                info: {
+                    hydration: '中等',
+                    porosity: '中等',
+                    density: '中等',
+                    strength: '0.89 MPa'
+                }
+            },
+            '28d': {
+                tailings: {
+                    count: 30,
+                    sizeMin: 0.8,
+                    sizeMax: 1.5,
+                    spacing: 1.2
+                },
+                csh: {
+                    count: 28,
+                    sizeMin: 0.4,
+                    sizeMax: 1.0,
+                    coverage: 0.95
+                },
+                aft: {
+                    count: 18,
+                    lengthMin: 1.2,
+                    lengthMax: 2.5
+                },
+                info: {
+                    hydration: '高',
+                    porosity: '低',
+                    density: '高',
+                    strength: '1.83 MPa'
+                }
+            }
+        };
+        
+        // ============================================
+        // 初始化函数
+        // ============================================
+        
+        function init() {
+            try {
+                console.log('开始初始化...');
+                
+                // 创建场景 - 纯净深蓝色渐变背景
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x001122);
+                console.log('场景创建成功');
+                
+                // 添加浅景深雾化效果 - 焦点集中于中心三维结构
+                scene.fog = new THREE.FogExp2(0x001122, 0.03);
+                
+                // 创建相机
+                camera = new THREE.PerspectiveCamera(
+                    60,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    1000
+                );
+                camera.position.set(8, 6, 8);
+                console.log('相机创建成功');
+                
+                // 创建渲染器 - 8K超清质感配置
+                renderer = new THREE.WebGLRenderer({ 
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: "high-performance"
+                });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 1.15;
+                document.getElementById('canvas-container').appendChild(renderer.domElement);
+                console.log('渲染器创建成功');
+                
+                // 创建控制器
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.minDistance = 3;
+                controls.maxDistance = 20;
+                controls.maxPolarAngle = Math.PI / 1.5;
+                console.log('控制器创建成功');
+                
+                // 添加光源
+                setupLighting();
+                console.log('光源设置成功');
+                
+                // 创建结构组
+                tailingsGroup = new THREE.Group();
+                cshGroup = new THREE.Group();
+                aftGroup = new THREE.Group();
+                scene.add(tailingsGroup);
+                scene.add(cshGroup);
+                scene.add(aftGroup);
+                console.log('结构组创建成功');
+                
+                // 初始化射线检测
+                raycaster = new THREE.Raycaster();
+                mouse = new THREE.Vector2();
+                
+                // 构建初始微观结构（7d龄期）
+                console.log('开始构建微观结构...');
+                buildMicrostructure('7d');
+                console.log('微观结构构建成功');
+                
+                // 添加事件监听
+                window.addEventListener('resize', onWindowResize);
+                renderer.domElement.addEventListener('click', onMouseClick);
+                renderer.domElement.addEventListener('mousemove', onMouseMove);
+                
+                // 隐藏加载动画
+                setTimeout(() => {
+                    document.getElementById('loading').classList.add('hidden');
+                }, 1000);
+                
+                // 开始渲染循环
+                console.log('开始渲染循环');
+                animate();
+            } catch (error) {
+                console.error('初始化错误:', error);
+                document.querySelector('.loading-text').textContent = '加载失败: ' + error.message;
+            }
+        }
+        
+        // 设置光源 - FE-SEM二次电子成像光影系统
+        function setupLighting() {
+            // 环境光 - 低强度模拟SEM真空室环境
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.32);
+            scene.add(ambientLight);
+            
+            // 主光源 - 斜上方45度入射，模拟SEM电子束照明
+            const mainLight = new THREE.DirectionalLight(0xFFFFFF, 1.2);
+            mainLight.position.set(7, 7, 0); // 斜上方45度
+            mainLight.castShadow = true;
+            mainLight.shadow.mapSize.width = 4096;
+            mainLight.shadow.mapSize.height = 4096;
+            mainLight.shadow.camera.near = 0.1;
+            mainLight.shadow.camera.far = 100;
+            mainLight.shadow.bias = -0.0001;
+            mainLight.shadow.radius = 1.5;
+            scene.add(mainLight);
+            
+            // 补光 - 低角度填充光，减少死黑区域
+            const fillLight = new THREE.DirectionalLight(0xF0F8FF, 0.4);
+            fillLight.position.set(-5, 2, -5);
+            scene.add(fillLight);
+            
+            // 轮廓光 - SEM边缘增强效应
+            const rimLight = new THREE.DirectionalLight(0xE8F4FF, 0.5);
+            rimLight.position.set(-3, 5, 8);
+            scene.add(rimLight);
+            
+            // 底部反射光 - 模拟样品台反射
+            const bounceLight = new THREE.DirectionalLight(0xD6EAF8, 0.22);
+            bounceLight.position.set(0, -8, 3);
+            scene.add(bounceLight);
+            
+            // 点光源 - 局部细节增强
+            const detailLight = new THREE.PointLight(0xFFFFFF, 0.28, 15);
+            detailLight.position.set(3, 6, 3);
+            scene.add(detailLight);
+        }
+        
+        // ============================================
+        // 微观结构构建函数
+        // ============================================
+        
+        function buildMicrostructure(age) {
+            try {
+                const config = ageConfigs[age];
+                if (!config) {
+                    console.error('未知的龄期:', age);
+                    return;
+                }
+                
+                // 清除现有结构
+                clearGroups();
+                
+                // 构建铁尾矿骨料
+                buildTailings(config.tailings);
+                
+                // 构建C-S-H凝胶
+                buildCSH(config.csh);
+                
+                // 构建钙矾石晶体
+                buildAFT(config.aft);
+                
+                // 更新UI信息
+                updateAgeInfo(config.info);
+            } catch (error) {
+                console.error('构建微观结构错误:', error);
+            }
+        }
+        
+        // 清除所有组
+        function clearGroups() {
+            [tailingsGroup, cshGroup, aftGroup].forEach(group => {
+                while (group.children.length > 0) {
+                    const child = group.children[0];
+                    if (child.geometry) child.geometry.dispose();
+                    group.remove(child);
+                }
+            });
+        }
+        
+        // 构建铁尾矿骨料 - FE-SEM超写实亚棱角-棱角状硅质/铁质矿物
+        function buildTailings(config) {
+            const spacing = config.spacing || 2.0;
+            const count = config.count;
+            
+            const gridSize = Math.ceil(Math.cbrt(count));
+            const offset = spacing * (gridSize - 1) / 2;
+            
+            const positions = [];
+            for (let x = 0; x < gridSize; x++) {
+                for (let y = 0; y < gridSize; y++) {
+                    for (let z = 0; z < gridSize; z++) {
+                        positions.push({ x, y, z });
+                    }
+                }
+            }
+            
+            for (let i = positions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [positions[i], positions[j]] = [positions[j], positions[i]];
+            }
+            
+            const selectedPositions = positions.slice(0, count);
+            
+            selectedPositions.forEach((pos) => {
+                const size = Math.random() * (config.sizeMax - config.sizeMin) + config.sizeMin;
+                
+                // 创建亚棱角-棱角状颗粒 - 使用Dodecahedron并添加顶点扰动
+                const geometry = new THREE.DodecahedronGeometry(size, 1);
+                const positions = geometry.attributes.position;
+                
+                // 添加顶点扰动模拟破碎解理面和微裂纹
+                for (let i = 0; i < positions.count; i++) {
+                    const x = positions.getX(i);
+                    const y = positions.getY(i);
+                    const z = positions.getZ(i);
+                    
+                    // 随机扰动模拟不规则棱角
+                    const noise = 0.08;
+                    positions.setX(i, x + (Math.random() - 0.5) * noise * size);
+                    positions.setY(i, y + (Math.random() - 0.5) * noise * size);
+                    positions.setZ(i, z + (Math.random() - 0.5) * noise * size);
+                }
+                
+                geometry.computeVertexNormals();
+                
+                const mesh = new THREE.Mesh(geometry, materials.tailings);
+                
+                const jitter = spacing * 0.06;
+                mesh.position.x = (pos.x * spacing - offset) + (Math.random() - 0.5) * jitter;
+                mesh.position.y = (pos.y * spacing - offset) + (Math.random() - 0.5) * jitter;
+                mesh.position.z = (pos.z * spacing - offset) + (Math.random() - 0.5) * jitter;
+                
+                mesh.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+                
+                const scaleVar = 0.9 + Math.random() * 0.2;
+                mesh.scale.set(scaleVar, scaleVar, scaleVar);
+                
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                mesh.userData = { type: 'tailings', name: '铁尾矿骨料' };
+                tailingsGroup.add(mesh);
+            });
+        }
+        
+        // 构建C-S-H凝胶 - FE-SEM超写实絮状、蜂窝状、网状多孔结构
+        function buildCSH(config) {
+            for (let i = 0; i < config.count; i++) {
+                const size = Math.random() * (config.sizeMax - config.sizeMin) + config.sizeMin;
+                
+                // 创建絮状团聚体 - 使用多个小球体组合模拟纳米颗粒团聚
+                const group = new THREE.Group();
+                
+                // 主团聚体核心
+                const clusterCount = Math.floor(Math.random() * 4) + 3;
+                for (let j = 0; j < clusterCount; j++) {
+                    const clusterSize = size * (0.4 + Math.random() * 0.4);
+                    
+                    // 使用Icosahedron创建纳米颗粒感
+                    const geometry = new THREE.IcosahedronGeometry(clusterSize, 2);
+                    const mesh = new THREE.Mesh(geometry, materials.csh);
+                    
+                    // 在核心周围分布，形成絮状结构
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos(2 * Math.random() - 1);
+                    const r = size * (0.3 + Math.random() * 0.5);
+                    
+                    mesh.position.x = r * Math.sin(phi) * Math.cos(theta);
+                    mesh.position.y = r * Math.sin(phi) * Math.sin(theta);
+                    mesh.position.z = r * Math.cos(phi);
+                    
+                    mesh.rotation.set(
+                        Math.random() * Math.PI,
+                        Math.random() * Math.PI,
+                        Math.random() * Math.PI
+                    );
+                    
+                    group.add(mesh);
+                }
+                
+                // 添加细小纤维状结构模拟C-S-H的网状特征
+                const fiberCount = Math.floor(Math.random() * 5) + 3;
+                for (let k = 0; k < fiberCount; k++) {
+                    const fiberLength = size * (0.8 + Math.random() * 0.6);
+                    const fiberRadius = size * 0.08;
+                    
+                    const fiberGeo = new THREE.CylinderGeometry(fiberRadius, fiberRadius, fiberLength, 5);
+                    const fiber = new THREE.Mesh(fiberGeo, materials.csh);
+                    
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos(2 * Math.random() - 1);
+                    const r = size * (0.5 + Math.random() * 0.4);
+                    
+                    fiber.position.x = r * Math.sin(phi) * Math.cos(theta);
+                    fiber.position.y = r * Math.sin(phi) * Math.sin(theta);
+                    fiber.position.z = r * Math.cos(phi);
+                    
+                    fiber.rotation.set(
+                        Math.random() * Math.PI,
+                        Math.random() * Math.PI,
+                        Math.random() * Math.PI
+                    );
+                    
+                    group.add(fiber);
+                }
+                
+                // 在骨料间隙随机分布
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                const radius = 1.0 + Math.random() * 2.2;
+                
+                group.position.x = radius * Math.sin(phi) * Math.cos(theta);
+                group.position.y = radius * Math.sin(phi) * Math.sin(theta);
+                group.position.z = radius * Math.cos(phi);
+                
+                group.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+                
+                const scale = 0.6 + Math.random() * 0.5;
+                group.scale.set(scale, scale, scale);
+                
+                group.userData = { type: 'csh', name: 'C-S-H凝胶' };
+                cshGroup.add(group);
+            }
+        }
+        
+        // 构建钙矾石晶体 - FE-SEM超写实六方晶系长棒状/针状单晶
+        function buildAFT(config) {
+            for (let i = 0; i < config.count; i++) {
+                const length = Math.random() * (config.lengthMax - config.lengthMin) + config.lengthMin;
+                const diameter = length * 0.08; // 长径比约12:1
+                
+                // 创建六方长棒状晶体 - 六棱柱
+                const geometry = new THREE.CylinderGeometry(diameter, diameter, length, 6);
+                
+                // 添加端面平整度 - 稍微收缩端部模拟晶体端面
+                const positions = geometry.attributes.position;
+                for (let j = 0; j < positions.count; j++) {
+                    const y = positions.getY(j);
+                    // 端面稍微收缩
+                    if (Math.abs(y) > length * 0.45) {
+                        const x = positions.getX(j);
+                        const z = positions.getZ(j);
+                        positions.setX(j, x * 0.92);
+                        positions.setZ(j, z * 0.92);
+                    }
+                }
+                geometry.computeVertexNormals();
+                
+                const mesh = new THREE.Mesh(geometry, materials.aft);
+                
+                // 随机分布在空间中 - 更倾向于分布在骨料间隙
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.acos(2 * Math.random() - 1);
+                const radius = 1.2 + Math.random() * 2.2;
+                
+                mesh.position.x = radius * Math.sin(phi) * Math.cos(theta);
+                mesh.position.y = radius * Math.sin(phi) * Math.sin(theta);
+                mesh.position.z = radius * Math.cos(phi);
+                
+                // 随机旋转 - 使晶体呈现自然穿插状态
+                mesh.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+                
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                mesh.userData = { type: 'aft', name: '钙矾石晶体' };
+                aftGroup.add(mesh);
+            }
+        }
+        
+        // ============================================
+        // 龄期切换功能
+        // ============================================
+        
+        function switchAge(age) {
+            if (age === currentAge) return;
+            
+            currentAge = age;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.age-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.age === age);
+            });
+            
+            // 更新显示
+            document.getElementById('current-age-display').textContent = age;
+            
+            // 平滑过渡动画
+            transitionToAge(age);
+        }
+        
+        function transitionToAge(age) {
+            // 淡出当前结构
+            const allGroups = [tailingsGroup, cshGroup, aftGroup];
+            let fadeOutComplete = 0;
+            
+            allGroups.forEach(group => {
+                fadeOutGroup(group, () => {
+                    fadeOutComplete++;
+                    if (fadeOutComplete === allGroups.length) {
+                        // 构建新结构
+                        buildMicrostructure(age);
+                        // 淡入新结构
+                        allGroups.forEach(g => fadeInGroup(g));
+                    }
+                });
+            });
+        }
+        
+        function fadeOutGroup(group, callback) {
+            const duration = 300;
+            const startTime = Date.now();
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                group.children.forEach(child => {
+                    child.scale.setScalar(1 - progress);
+                });
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    callback();
+                }
+            }
+            
+            animate();
+        }
+        
+        function fadeInGroup(group) {
+            const duration = 500;
+            const startTime = Date.now();
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easeProgress = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+                
+                group.children.forEach(child => {
+                    child.scale.setScalar(easeProgress);
+                });
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                }
+            }
+            
+            animate();
+        }
+        
+        // 更新龄期信息UI
+        function updateAgeInfo(info) {
+            document.getElementById('hydration-level').textContent = info.hydration;
+            document.getElementById('porosity-level').textContent = info.porosity;
+            document.getElementById('density-level').textContent = info.density;
+            document.getElementById('strength-level').textContent = info.strength;
+        }
+        
+        // ============================================
+        // 交互功能
+        // ============================================
+        
+        function onMouseClick(event) {
+            // 计算鼠标位置
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            // 射线检测
+            raycaster.setFromCamera(mouse, camera);
+            
+            const allObjects = [
+                ...tailingsGroup.children,
+                ...cshGroup.children,
+                ...aftGroup.children
+            ];
+            
+            const intersects = raycaster.intersectObjects(allObjects);
+            
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                const type = object.userData.type;
+                
+                if (type) {
+                    showModal(type);
+                }
+            }
+        }
+        
+        function onMouseMove(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            
+            const allObjects = [
+                ...tailingsGroup.children,
+                ...cshGroup.children,
+                ...aftGroup.children
+            ];
+            
+            const intersects = raycaster.intersectObjects(allObjects);
+            
+            // 改变鼠标样式
+            document.body.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+            
+            // 高亮效果
+            allObjects.forEach(obj => {
+                if (obj.material.emissive) {
+                    obj.material.emissiveIntensity = obj.userData.type === 'tailings' ? 0 : 
+                                                     obj.userData.type === 'csh' ? 0.2 : 0.3;
+                }
+            });
+            
+            if (intersects.length > 0) {
+                const obj = intersects[0].object;
+                if (obj.material.emissive) {
+                    obj.material.emissiveIntensity = 0.6;
+                }
+            }
+        }
+        
+        // ============================================
+        // 弹窗功能
+        // ============================================
+        
+        const modalContent = {
+            tailings: {
+                icon: '',
+                iconClass: 'tailings',
+                title: '铁尾矿骨料',
+                subtitle: 'Iron Tailings Aggregate',
+                content: `
+                    <p><strong>高硅特性：</strong>SiO₂含量达<span style="color: #40A9FF;">67.32%</span>，颗粒粒径0.075mm以下占68.9%，呈不规则细粒状。</p>
+                    <div class="modal-highlight">
+                        <strong>核心作用：</strong>作为充填体骨架，提供体积稳定性
+                    </div>
+                    <p><strong>活性激发：</strong>TF固化剂激发铁尾矿潜在火山灰活性，促进活性SiO₂、Al₂O₃参与水化反应，生成C-S-H凝胶和钙矾石晶体。</p>
+                    <p style="font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 16px;">
+                        数据来源：论文试验用高硅铁尾矿化学成分分析
+                    </p>
+                `
+            },
+            csh: {
+                icon: '',
+                iconClass: 'csh',
+                title: 'C-S-H凝胶',
+                subtitle: 'Calcium-Silicate-Hydrate Gel',
+                content: `
+                    <p><strong>主要胶结相：</strong>水化硅酸钙凝胶，呈絮状或纤维状，是充填体强度的主要来源。</p>
+                    <div class="modal-highlight">
+                        <strong>胶结机理：</strong>将铁尾矿颗粒黏结为整体，提供力学强度
+                    </div>
+                    <p><strong>生成途径：</strong>由TF固化剂激发铁尾矿、矿渣微粉中的活性SiO₂、Al₂O₃与Ca(OH)₂反应生成。</p>
+                    <p>随着龄期增长，C-S-H凝胶含量增加，结构更加致密，强度持续发展。</p>
+                `
+            },
+            aft: {
+                icon: '',
+                iconClass: 'aft',
+                title: '钙矾石晶体（AFt）',
+                subtitle: 'Ettringite Crystal',
+                content: `
+                    <p><strong>晶体特征：</strong>针状或柱状晶体，填充于孔隙中，优化颗粒级配。</p>
+                    <div class="modal-highlight">
+                        <strong>功能作用：</strong>填充孔隙，提升结构致密性与水稳定性
+                    </div>
+                    <p><strong>生成反应：</strong>由石膏（CaSO₄·2H₂O）与水化铝酸钙反应生成，化学式为3CaO·Al₂O₃·3CaSO₄·32H₂O。</p>
+                    <p>适量的钙矾石晶体可提升早期强度，过量则可能引起体积膨胀。</p>
+                `
+            }
+        };
+        
+        function showModal(type) {
+            const content = modalContent[type];
+            if (!content) return;
+            
+            document.getElementById('modal-icon').textContent = content.icon;
+            document.getElementById('modal-icon').className = `modal-icon ${content.iconClass}`;
+            document.getElementById('modal-title').textContent = content.title;
+            document.getElementById('modal-subtitle').textContent = content.subtitle;
+            document.getElementById('modal-content').innerHTML = content.content;
+            
+            document.getElementById('info-modal').classList.add('visible');
+        }
+        
+        function closeModal() {
+            document.getElementById('info-modal').classList.remove('visible');
+        }
+        
+        // 点击弹窗外部关闭
+        document.addEventListener('click', (e) => {
+            const modal = document.getElementById('info-modal');
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // ============================================
+        // 渲染与窗口调整
+        // ============================================
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            try {
+                controls.update();
+                
+                // 缓慢旋转场景
+                if (tailingsGroup) {
+                    tailingsGroup.rotation.y += 0.001;
+                }
+                if (cshGroup) {
+                    cshGroup.rotation.y += 0.001;
+                }
+                if (aftGroup) {
+                    aftGroup.rotation.y += 0.001;
+                }
+                
+                if (renderer && scene && camera) {
+                    renderer.render(scene, camera);
+                }
+            } catch (error) {
+                console.error('渲染错误:', error);
+            }
+        }
+        
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // ============================================
+        // 启动应用
+        // ============================================
+        
+        // 检查 Three.js 是否正确加载
+        if (typeof THREE === 'undefined') {
+            console.error('Three.js 未加载');
+            document.querySelector('.loading-text').textContent = '错误：Three.js 未加载';
+        } else if (typeof THREE.OrbitControls === 'undefined') {
+            console.error('OrbitControls 未加载');
+            document.querySelector('.loading-text').textContent = '错误：OrbitControls 未加载';
+        } else {
+            console.log('Three.js 和 OrbitControls 已加载，开始初始化...');
+            init();
+        }
+    </script>
+</body>
+</html>

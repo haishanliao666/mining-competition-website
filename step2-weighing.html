@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>步骤2：原材料称量与配料</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            color: #333333;
+            background: #F5F7FA;
+            margin: 0;
+            overflow: hidden;
+        }
+        .experiment-container {
+            display: flex;
+            height: 100vh;
+        }
+        .scene-area {
+            width: 70%;
+            background: linear-gradient(135deg, #2a2a3e 0%, #1a1a2e 100%);
+            position: relative;
+        }
+        #three-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .control-panel {
+            width: 30%;
+            min-width: 360px;
+            background: #FFFFFF;
+            border-left: 1px solid #E0E0E0;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .step-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #2A5F48;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4A90E2;
+        }
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2A5F48;
+            margin-bottom: 10px;
+        }
+        .group-btn {
+            width: 100%;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+            border: 1px solid #E0E0E0;
+            border-radius: 4px;
+            background: #FFFFFF;
+            color: #666666;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+        }
+        .group-btn:hover {
+            border-color: #4A90E2;
+            color: #4A90E2;
+        }
+        .group-btn.active {
+            background: #4A90E2;
+            color: #FFFFFF;
+            border-color: #4A90E2;
+        }
+        .formula-panel {
+            background: #FFFFFF;
+            border: 2px solid #2A5F48;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .formula-panel.active {
+            display: block;
+        }
+        .formula-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .formula-table th {
+            background: #2A5F48;
+            color: white;
+            padding: 8px;
+            text-align: left;
+        }
+        .formula-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #E0E0E0;
+        }
+        .action-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .action-btn.primary {
+            background: #4A90E2;
+            color: white;
+        }
+        .action-btn.secondary {
+            background: #2A5F48;
+            color: white;
+        }
+        .action-btn.default {
+            background: #F5F7FA;
+            color: #666666;
+            border: 1px solid #E0E0E0;
+        }
+    </style>
+</head>
+<body>
+    <div class="experiment-container">
+        <div class="scene-area">
+            <canvas id="three-canvas"></canvas>
+        </div>
+        <div class="control-panel">
+            <div class="step-title">步骤2：原材料称量与配料</div>
+            
+            <div class="section-title">选择试验配比</div>
+            <button class="group-btn" onclick="selectGroup('LP-1')">LP-1 空白组（无激发剂）</button>
+            <button class="group-btn" onclick="selectGroup('LP-2')">LP-2 低碱组（NaOH 0.2%）</button>
+            <button class="group-btn" onclick="selectGroup('LP-3')">LP-3 最优组（NaOH 0.5%）</button>
+            <button class="group-btn" onclick="selectGroup('LP-4')">LP-4 中碱组（NaOH 0.7%）</button>
+            <button class="group-btn" onclick="selectGroup('LP-5')">LP-5 高碱组（NaOH 1.0%）</button>
+            <button class="group-btn" onclick="selectGroup('LP-6')">LP-6 低C₃S组（C₃S 5%）</button>
+            <button class="group-btn" onclick="selectGroup('LP-7')">LP-7 高C₃S组（C₃S 10%）</button>
+
+            <div class="formula-panel" id="formula-panel">
+                <div class="section-title" id="formula-title">配比详情</div>
+                <table class="formula-table" id="formula-table">
+                    <thead><tr><th>原材料</th><th>质量(g)</th><th>占比</th></tr></thead>
+                    <tbody id="formula-data"></tbody>
+                </table>
+            </div>
+
+            <button class="action-btn primary" onclick="goToNextStep()">进入下一步</button>
+            <button class="action-btn default" onclick="goBackToMain()">返回实验主流程</button>
+        </div>
+    </div>
+
+    <script>
+        // 7组标准试验配比
+        const groupData = {
+            'LP-1': {
+                name: 'LP-1 空白组',
+                note: '无激发剂，基准组',
+                materials: [
+                    { name: '铁尾矿', mass: 400, color: 0x8B7355 },
+                    { name: '矿渣', mass: 350, color: 0xC0C0C0 },
+                    { name: '钢渣', mass: 150, color: 0x4A4A4A },
+                    { name: '脱硫石膏', mass: 100, color: 0xF5F5DC }
+                ]
+            },
+            'LP-2': {
+                name: 'LP-2 低碱组',
+                note: 'NaOH 0.2%',
+                materials: [
+                    { name: '铁尾矿', mass: 400, color: 0x8B7355 },
+                    { name: '矿渣', mass: 350, color: 0xC0C0C0 },
+                    { name: '钢渣', mass: 150, color: 0x4A4A4A },
+                    { name: '脱硫石膏', mass: 100, color: 0xF5F5DC },
+                    { name: 'NaOH激发剂', mass: 2, color: 0xFFFFFF }
+                ]
+            },
+            'LP-3': {
+                name: 'LP-3 最优组',
+                note: 'NaOH 0.5%，全龄期强度最优',
+                materials: [
+                    { name: '铁尾矿', mass: 400, color: 0x8B7355 },
+                    { name: '矿渣', mass: 348, color: 0xC0C0C0 },
+                    { name: '钢渣', mass: 150, color: 0x4A4A4A },
+                    { name: '脱硫石膏', mass: 100, color: 0xF5F5DC },
+                    { name: 'NaOH激发剂', mass: 5, color: 0xFFFFFF }
+                ]
+            },
+            'LP-4': {
+                name: 'LP-4 中碱组',
+                note: 'NaOH 0.7%',
+                materials: [
+                    { name: '铁尾矿', mass: 400, color: 0x8B7355 },
+                    { name: '矿渣', mass: 346, color: 0xC0C0C0 },
+                    { name: '钢渣', mass: 150, color: 0x4A4A4A },
+                    { name: '脱硫石膏', mass: 100, color: 0xF5F5DC },
+                    { name: 'NaOH激发剂', mass: 7, color: 0xFFFFFF }
+                ]
+            },
+            'LP-5': {
+                name: 'LP-5 高碱组',
+                note: 'NaOH 1.0%，过量碱后期强度下降',
+                materials: [
+                    { name: '铁尾矿', mass: 400, color: 0x8B7355 },
+                    { name: '矿渣', mass: 343, color: 0xC0C0C0 },
+                    { name: '钢渣', mass: 150, color: 0x4A4A4A },
+                    { name: '脱硫石膏', mass: 100, color: 0xF5F5DC },
+                    { name: 'NaOH激发剂', mass: 10, color: 0xFFFFFF }
+                ]
+            },
+            'LP-6': {
+                name: 'LP-6 低C₃S组',
+                note: 'C₃S 5%，替代矿渣',
+                materials: [
+                    { name: '铁尾矿', mass: 400, color: 0x8B7355 },
+                    { name: '矿渣', mass: 300, color: 0xC0C0C0 },
+                    { name: '钢渣', mass: 150, color: 0x4A4A4A },
+                    { name: '脱硫石膏', mass: 100, color: 0xF5F5DC },
+                    { name: 'C₃S激发剂', mass: 50, color: 0xFFFFFF }
+                ]
+            },
+            'LP-7': {
+                name: 'LP-7 高C₃S组',
+                note: 'C₃S 10%，替代矿渣',
+                materials: [
+                    { name: '铁尾矿', mass: 400, color: 0x8B7355 },
+                    { name: '矿渣', mass: 250, color: 0xC0C0C0 },
+                    { name: '钢渣', mass: 150, color: 0x4A4A4A },
+                    { name: '脱硫石膏', mass: 100, color: 0xF5F5DC },
+                    { name: 'C₃S激发剂', mass: 100, color: 0xFFFFFF }
+                ]
+            }
+        };
+
+        let scene, camera, renderer;
+        let cups = [];
+
+        function init() {
+            const canvas = document.getElementById('three-canvas');
+            const container = document.querySelector('.scene-area');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x2a2a3e);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 6, 10);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+
+            // 灯光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+
+            const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            mainLight.position.set(5, 10, 5);
+            mainLight.castShadow = true;
+            scene.add(mainLight);
+
+            // 实验台
+            const tableGeometry = new THREE.BoxGeometry(10, 0.2, 6);
+            const tableMaterial = new THREE.MeshStandardMaterial({ color: 0x1a1a1a });
+            const table = new THREE.Mesh(tableGeometry, tableMaterial);
+            table.position.y = -0.1;
+            table.receiveShadow = true;
+            scene.add(table);
+
+            // 天平
+            const balanceGeometry = new THREE.BoxGeometry(3, 0.6, 2.5);
+            const balanceMaterial = new THREE.MeshStandardMaterial({ color: 0xf5f5f5 });
+            const balance = new THREE.Mesh(balanceGeometry, balanceMaterial);
+            balance.position.y = 0.3;
+            balance.castShadow = true;
+            scene.add(balance);
+
+            // 天平显示屏
+            const displayGeometry = new THREE.PlaneGeometry(1.5, 0.6);
+            const displayCanvas = document.createElement('canvas');
+            displayCanvas.width = 256;
+            displayCanvas.height = 128;
+            const ctx = displayCanvas.getContext('2d');
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 256, 128);
+            ctx.fillStyle = '#00ff00';
+            ctx.font = 'bold 48px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('1000.0000', 128, 64);
+            const displayTexture = new THREE.CanvasTexture(displayCanvas);
+            const displayMaterial = new THREE.MeshBasicMaterial({ map: displayTexture });
+            const display = new THREE.Mesh(displayGeometry, displayMaterial);
+            display.position.set(0, 0.61, 1.26);
+            scene.add(display);
+
+            // 称量盘
+            const panGeometry = new THREE.CylinderGeometry(1.2, 1.2, 0.05, 32);
+            const panMaterial = new THREE.MeshStandardMaterial({ color: 0xc0c0c0, metalness: 0.8, roughness: 0.2 });
+            const pan = new THREE.Mesh(panGeometry, panMaterial);
+            pan.position.y = 0.65;
+            pan.receiveShadow = true;
+            scene.add(pan);
+
+            // 创建四个杯子放在天平上
+            createCups();
+
+            animate();
+        }
+
+        function createCups() {
+            // 清除旧杯子
+            cups.forEach(cup => scene.remove(cup));
+            cups = [];
+
+            const positions = [
+                { x: -0.6, z: -0.6 },
+                { x: 0.6, z: -0.6 },
+                { x: -0.6, z: 0.6 },
+                { x: 0.6, z: 0.6 }
+            ];
+
+            const materials = [
+                { name: '铁尾矿', color: 0x8B7355 },
+                { name: '矿渣', color: 0xC0C0C0 },
+                { name: '钢渣', color: 0x4A4A4A },
+                { name: '脱硫石膏', color: 0xF5F5DC }
+            ];
+
+            positions.forEach((pos, index) => {
+                const cupGroup = new THREE.Group();
+
+                // 烧杯主体
+                const glassGeometry = new THREE.CylinderGeometry(0.35, 0.3, 0.8, 32);
+                const glassMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.3,
+                    roughness: 0.1,
+                    transmission: 0.9
+                });
+                const glass = new THREE.Mesh(glassGeometry, glassMaterial);
+                glass.position.y = 0.4;
+                glass.castShadow = true;
+                cupGroup.add(glass);
+
+                // 粉体
+                const powderGeometry = new THREE.CylinderGeometry(0.28, 0.28, 0.5, 32);
+                const powderMaterial = new THREE.MeshStandardMaterial({
+                    color: materials[index].color,
+                    roughness: 0.9
+                });
+                const powder = new THREE.Mesh(powderGeometry, powderMaterial);
+                powder.position.y = 0.25;
+                cupGroup.add(powder);
+
+                // 标签
+                const labelGeometry = new THREE.PlaneGeometry(0.5, 0.2);
+                const labelCanvas = document.createElement('canvas');
+                labelCanvas.width = 256;
+                labelCanvas.height = 64;
+                const ctx = labelCanvas.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 256, 64);
+                ctx.strokeStyle = '#333333';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(2, 2, 252, 60);
+                ctx.fillStyle = '#333333';
+                ctx.font = 'bold 24px "Microsoft YaHei"';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(materials[index].name, 128, 32);
+                const labelTexture = new THREE.CanvasTexture(labelCanvas);
+                const labelMaterial = new THREE.MeshBasicMaterial({ map: labelTexture, transparent: true });
+                const label = new THREE.Mesh(labelGeometry, labelMaterial);
+                label.position.set(0, 0.5, 0.36);
+                cupGroup.add(label);
+
+                cupGroup.position.set(pos.x, 0.68, pos.z);
+                scene.add(cupGroup);
+                cups.push(cupGroup);
+            });
+        }
+
+        function selectGroup(groupId) {
+            const data = groupData[groupId];
+            
+            document.querySelectorAll('.group-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.getElementById('formula-panel').classList.add('active');
+            document.getElementById('formula-title').textContent = data.name + ' - ' + data.note;
+
+            const tbody = document.getElementById('formula-data');
+            tbody.innerHTML = '';
+            let totalMass = 0;
+            data.materials.forEach(mat => {
+                totalMass += mat.mass;
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${mat.name}</td><td>${mat.mass}g</td><td>${(mat.mass / 10).toFixed(1)}%</td>`;
+                tbody.appendChild(row);
+            });
+            const totalRow = document.createElement('tr');
+            totalRow.innerHTML = `<td>总计</td><td>${totalMass}g</td><td>100%</td>`;
+            tbody.appendChild(totalRow);
+
+            // 保存选择
+            localStorage.setItem('step2SelectedGroup', groupId);
+        }
+
+        function goToNextStep() {
+            const selectedGroup = localStorage.getItem('step2SelectedGroup');
+            if (!selectedGroup) {
+                alert('请先选择试验配比');
+                return;
+            }
+            
+            const data = groupData[selectedGroup];
+            localStorage.setItem('step2Completed', 'true');
+            localStorage.setItem('step2Data', JSON.stringify({
+                groupName: data.name,
+                groupId: selectedGroup,
+                materials: data.materials
+            }));
+
+            const fromMainPage = localStorage.getItem('fromMainPage');
+            if (fromMainPage === 'true') {
+                localStorage.removeItem('fromMainPage');
+                window.location.href = 'virtual-experiment-full.html';
+            } else {
+                alert('步骤2完成！配比：' + data.name);
+            }
+        }
+
+        function goBackToMain() {
+            const fromMainPage = localStorage.getItem('fromMainPage');
+            if (fromMainPage === 'true') {
+                localStorage.removeItem('fromMainPage');
+                window.location.href = 'virtual-experiment-full.html';
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            const container = document.querySelector('.scene-area');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        init();
+    </script>
+</body>
+</html>

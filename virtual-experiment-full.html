@@ -1,0 +1,1958 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高掺量铁尾矿基全固废胶凝材料制备及水化机理虚拟仿真实验</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4A90E2',
+                        'primary-dark': '#3A7BC8',
+                        secondary: '#2A5F48',
+                        'secondary-light': '#3D7A5F',
+                        background: '#F5F7FA',
+                        surface: '#FFFFFF',
+                        text: '#333333',
+                        'text-light': '#666666',
+                        border: '#E0E0E0'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            color: #333333;
+            background: #F5F7FA;
+        }
+        .nav-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #FFFFFF;
+            border-bottom: 1px solid #E0E0E0;
+            z-index: 1000;
+        }
+        .experiment-container {
+            display: flex;
+            min-height: calc(100vh - 60px);
+            padding-top: 60px;
+        }
+        .sidebar {
+            width: 280px;
+            background: #FFFFFF;
+            border-right: 1px solid #E0E0E0;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .visualization-area {
+            flex: 1;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            position: relative;
+            min-height: 400px;
+            overflow: hidden;
+        }
+        .control-panel {
+            background: #FFFFFF;
+            border-top: 1px solid #E0E0E0;
+            padding: 20px;
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        .step-item {
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .step-item:hover {
+            background: #F5F7FA;
+        }
+        .step-item.active {
+            background: #E8F4FD;
+            border-left-color: #4A90E2;
+            color: #4A90E2;
+        }
+        .step-item.completed {
+            background: #E8F5E9;
+            border-left-color: #2A5F48;
+            color: #2A5F48;
+        }
+        .btn-primary {
+            background: #4A90E2;
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary:hover { 
+            background: #3A7BC8;
+            transform: translateY(-1px);
+        }
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: #2A5F48;
+            color: white;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-secondary:hover { 
+            background: #1e4535;
+            transform: translateY(-1px);
+        }
+        .input-field {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #E0E0E0;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: #4A90E2;
+        }
+        .info-box {
+            background: #E8F4FD;
+            border-left: 4px solid #4A90E2;
+            padding: 16px;
+            margin: 16px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #E0E0E0;
+            padding: 10px;
+            text-align: left;
+        }
+        .data-table th {
+            background: #F5F7FA;
+            font-weight: 600;
+        }
+        #three-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .progress-bar {
+            height: 4px;
+            background: #E0E0E0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 16px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #4A90E2;
+            transition: width 0.5s ease;
+        }
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-indicator.running {
+            background: #FFF3E0;
+            color: #E65100;
+        }
+        .status-indicator.completed {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+        .status-indicator.waiting {
+            background: #E3F2FD;
+            color: #1565C0;
+        }
+        .next-step-hint {
+            background: #E8F5E9;
+            border: 1px solid #2A5F48;
+            border-radius: 4px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .animation-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="nav-fixed">
+        <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <a href="index.html" class="text-sm text-gray-500 hover:text-primary transition-colors">返回首页</a>
+                <span class="text-lg font-bold" style="color: #2A5F48;">虚拟仿真实验</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-500">当前步骤: <span id="current-step-name" class="font-medium text-primary">铁尾矿机械活化粉磨</span></span>
+                <span id="step-status" class="status-indicator waiting">
+                    <span class="w-2 h-2 rounded-full bg-current"></span>
+                    等待操作
+                </span>
+                <button class="btn-secondary text-sm" onclick="generateReport()">生成实验报告</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="experiment-container">
+        <!-- 左侧步骤导航 -->
+        <aside class="sidebar">
+            <h3 class="font-bold mb-4" style="color: #2A5F48;">实验步骤</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-bar" style="width: 16.67%;"></div>
+            </div>
+            <div id="step-nav">
+                <div class="step-item active" data-step="1" onclick="switchStep(1)">
+                    <div class="font-medium">步骤1</div>
+                    <div class="text-sm">铁尾矿机械活化粉磨</div>
+                </div>
+                <div class="step-item" data-step="2" onclick="switchStep(2)">
+                    <div class="font-medium">步骤2</div>
+                    <div class="text-sm">原材料称量与配料</div>
+                </div>
+                <div class="step-item" data-step="3" onclick="switchStep(3)">
+                    <div class="font-medium">步骤3</div>
+                    <div class="text-sm">胶凝材料混料与浆体制备</div>
+                </div>
+                <div class="step-item" data-step="4" onclick="switchStep(4)">
+                    <div class="font-medium">步骤4</div>
+                    <div class="text-sm">试模浇筑与振捣成型</div>
+                </div>
+                <div class="step-item" data-step="5" onclick="switchStep(5)">
+                    <div class="font-medium">步骤5</div>
+                    <div class="text-sm">标准养护与终止水化</div>
+                </div>
+                <div class="step-item" data-step="6" onclick="switchStep(6)">
+                    <div class="font-medium">步骤6</div>
+                    <div class="text-sm">性能测试与微观表征</div>
+                </div>
+            </div>
+            
+            <div class="mt-8 p-4 bg-gray-50 rounded">
+                <h4 class="font-bold text-sm mb-2">实验数据记录</h4>
+                <div id="experiment-data" class="text-xs text-gray-600 space-y-1">
+                    <p>当前配比: <span id="record-formula">未设置</span></p>
+                    <p>粉磨时间: <span id="record-grind">未设置</span></p>
+                    <p>养护龄期: <span id="record-age">未设置</span></p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主实验区 -->
+        <main class="main-area">
+            <!-- 3D可视化区域 -->
+            <div class="visualization-area" id="visualization-area">
+                <canvas id="three-canvas"></canvas>
+                <div class="animation-overlay" id="animation-status">
+                    准备就绪 - 等待操作
+                </div>
+            </div>
+
+            <!-- 控制面板 -->
+            <div class="control-panel" id="control-panel">
+                <!-- 步骤1: 铁尾矿机械活化粉磨 -->
+                <div id="step-1-panel" class="step-panel">
+                    <h3 class="font-bold mb-4" style="color: #2A5F48;">步骤1: 铁尾矿机械活化粉磨实验</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm mb-2">粉磨时间 (分钟)</label>
+                            <select class="input-field mb-4" id="grind-time">
+                                <option value="20">20 min</option>
+                                <option value="40">40 min</option>
+                                <option value="60">60 min</option>
+                                <option value="80">80 min</option>
+                                <option value="100" selected>100 min (最优)</option>
+                                <option value="120">120 min</option>
+                            </select>
+                            <div class="flex gap-2">
+                                <button class="btn-primary" id="btn-grind" onclick="startGrinding()">启动球磨机</button>
+                            </div>
+                        </div>
+                        <div class="info-box">
+                            <h4 class="font-bold text-sm mb-2">机械活化机理</h4>
+                            <p class="text-sm">粉磨过程中，机械力作用使铁尾矿颗粒细化，硅氧/铝氧键断裂，晶格畸变，表面形成非晶态层，火山灰活性显著提升。最优粉磨时间为100min，此时比表面积712m²/kg，28d活性指数最高。</p>
+                        </div>
+                    </div>
+                    <div id="grind-result" class="mt-4 hidden">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>粉磨时间</th>
+                                    <th>比表面积 (m²/kg)</th>
+                                    <th>活性指数 (%)</th>
+                                    <th>颗粒状态</th>
+                                </tr>
+                            </thead>
+                            <tbody id="grind-data">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="step-1-next" class="next-step-hint hidden">
+                        <span>粉磨实验完成，可进行下一步操作</span>
+                        <button class="btn-primary text-sm" onclick="switchStep(2)">进入步骤2</button>
+                    </div>
+                </div>
+
+                <!-- 步骤2: 原材料称量与配料 -->
+                <div id="step-2-panel" class="step-panel hidden">
+                    <h3 class="font-bold mb-4" style="color: #2A5F48;">步骤2: 原材料称量与配料</h3>
+                    <div class="mb-4">
+                        <label class="block text-sm mb-2">选择试验组</label>
+                        <select class="input-field mb-4" id="test-group" onchange="selectTestGroup()">
+                            <option value="">请选择试验组</option>
+                            <option value="LP-1">LP-1: 基准组 (无激发剂)</option>
+                            <option value="LP-2">LP-2: 0.2% NaOH</option>
+                            <option value="LP-3">LP-3: 0.5% NaOH (最优)</option>
+                            <option value="LP-4">LP-4: 0.7% NaOH</option>
+                            <option value="LP-5">LP-5: 1.0% NaOH</option>
+                            <option value="LP-6">LP-6: 5% C₃S</option>
+                            <option value="LP-7">LP-7: 10% C₃S</option>
+                        </select>
+                    </div>
+                    <div id="formula-details" class="hidden">
+                        <div class="mb-4 p-3 bg-gray-50 rounded">
+                            <p class="text-sm text-gray-600">已选择试验组：<span id="selected-group-name" class="font-medium text-gray-800"></span></p>
+                        </div>
+                        <div class="flex gap-2 mb-4">
+                            <button class="btn-primary" id="btn-weigh" onclick="startWeighing()">开始称量</button>
+                            <button class="btn-secondary" onclick="viewMaterialInfo()">查看材料信息</button>
+                        </div>
+                        <!-- 材料信息表格，默认隐藏 -->
+                        <div id="material-info-panel" class="hidden">
+                            <table class="data-table mb-4">
+                                <thead>
+                                    <tr>
+                                        <th>原材料</th>
+                                        <th>掺量 (%)</th>
+                                        <th>质量 (g)</th>
+                                        <th>比表面积 (m²/kg)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="formula-data">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="step-2-next" class="next-step-hint hidden">
+                        <span>原材料称量完成，可进行下一步操作</span>
+                        <button class="btn-primary text-sm" onclick="switchStep(3)">进入步骤3</button>
+                    </div>
+                </div>
+
+                <!-- 步骤3: 胶凝材料混料与浆体制备 -->
+                <div id="step-3-panel" class="step-panel hidden">
+                    <h3 class="font-bold mb-4" style="color: #2A5F48;">步骤3: 胶凝材料混料与浆体制备</h3>
+                    
+                    <!-- 操作按钮区 -->
+                    <div class="mb-6">
+                        <button class="btn-primary w-full" id="btn-mix" onclick="startMixing()">启动搅拌机</button>
+                    </div>
+                    
+                    <!-- 水化反应机理说明 -->
+                    <div class="info-box mb-6">
+                        <h4 class="font-bold text-sm mb-2">水化反应机理</h4>
+                        <p class="text-sm">在碱性环境下，OH⁻攻击硅氧Si-O、铝氧Al-O键发生解聚，释放活性硅铝离子，与钙离子、硫酸根反应生成初始AFt和C-S-H凝胶。</p>
+                    </div>
+                    
+                    <!-- 下一步提示 -->
+                    <div id="step-3-next" class="next-step-hint hidden">
+                        <span>浆体制备完成，可进行下一步操作</span>
+                        <button class="btn-primary text-sm" onclick="switchStep(4)">进入步骤4</button>
+                    </div>
+                </div>
+
+                <!-- 步骤4: 试模浇筑与振捣成型 -->
+                <div id="step-4-panel" class="step-panel hidden">
+                    <h3 class="font-bold mb-4" style="color: #2A5F48;">步骤4: 试模浇筑与振捣成型</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-sm mb-4">试模规格: 40×40×160mm ISO标准三联试模</p>
+                            <div class="flex gap-2">
+                                <button class="btn-primary" id="btn-pour" onclick="pourSlurry()">浇筑浆体</button>
+                                <button class="btn-secondary" id="btn-vibrate" onclick="startVibration()">启动振动台</button>
+                            </div>
+                        </div>
+                        <div class="info-box">
+                            <h4 class="font-bold text-sm mb-2">振捣密实原理</h4>
+                            <p class="text-sm">振动使浆体中的气泡排出，颗粒重新排列，提高试块密实度。密实度直接影响胶凝材料的最终强度。</p>
+                        </div>
+                    </div>
+                    <div id="step-4-next" class="next-step-hint hidden">
+                        <span>试块成型完成，可进行下一步操作</span>
+                        <button class="btn-primary text-sm" onclick="switchStep(5)">进入步骤5</button>
+                    </div>
+                </div>
+
+                <!-- 步骤5: 标准养护与终止水化 -->
+                <div id="step-5-panel" class="step-panel hidden">
+                    <h3 class="font-bold mb-4" style="color: #2A5F48;">步骤5: 标准养护与终止水化</h3>
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm mb-2">选择养护龄期</label>
+                            <select class="input-field mb-4" id="curing-age">
+                                <option value="1">1天</option>
+                                <option value="3">3天</option>
+                                <option value="7">7天</option>
+                                <option value="28" selected>28天</option>
+                            </select>
+                            <div class="flex gap-2">
+                                <button class="btn-primary" id="btn-cure" onclick="startCuring()">放入养护箱</button>
+                                <button class="btn-secondary" id="btn-stop" onclick="stopHydration()">终止水化</button>
+                            </div>
+                        </div>
+                        <div class="info-box">
+                            <h4 class="font-bold text-sm mb-2">养护条件</h4>
+                            <p class="text-sm">温度: 20±2°C<br>相对湿度: ≥95%<br>终止水化: 无水乙醇浸泡，阻止水化反应继续进行</p>
+                        </div>
+                    </div>
+                    <div id="step-5-next" class="next-step-hint hidden">
+                        <span>养护完成，可进行下一步操作</span>
+                        <button class="btn-primary text-sm" onclick="switchStep(6)">进入步骤6</button>
+                    </div>
+                </div>
+
+                <!-- 步骤6: 性能测试与微观表征 -->
+                <div id="step-6-panel" class="step-panel hidden">
+                    <h3 class="font-bold mb-4" style="color: #2A5F48;">步骤6: 性能测试与微观表征</h3>
+                    <div class="grid md:grid-cols-3 gap-4 mb-4">
+                        <button class="btn-primary" id="btn-strength" onclick="testStrength()">抗压强度测试</button>
+                        <button class="btn-secondary" onclick="viewXRD()">XRD衍射分析</button>
+                        <button class="btn-secondary" onclick="viewSEM()">SEM微观形貌</button>
+                    </div>
+                    <div id="test-results" class="hidden">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>测试项目</th>
+                                    <th>测试结果</th>
+                                    <th>标准值</th>
+                                    <th>结论</th>
+                                </tr>
+                            </thead>
+                            <tbody id="test-data">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="step-6-complete" class="next-step-hint hidden">
+                        <span>所有实验步骤已完成！</span>
+                        <button class="btn-primary text-sm" onclick="generateReport()">查看实验报告</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 实验报告模态框 -->
+    <div id="report-modal" class="fixed inset-0 bg-black/50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold" style="color: #2A5F48;">实验报告</h2>
+                <button onclick="closeReport()" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="report-content">
+            </div>
+            <div class="mt-6 flex justify-end gap-2">
+                <button class="btn-primary" onclick="closeReport()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // 全局状态管理
+        // ==========================================
+        let currentStep = 1;
+        let isAnimating = false;
+        let animationId = null;
+        let sceneObjects = [];
+        
+        let experimentData = {
+            grindTime: null,
+            testGroup: null,
+            formula: {},
+            curingAge: null,
+            strength: null,
+            testResults: {}
+        };
+
+        const testGroups = {
+            'LP-1': { name: 'LP-1', naoh: 0, c3s: 0, strength3d: 8.8, strength28d: 35.3, description: '基准组，早期强度低，后期稳定增长' },
+            'LP-2': { name: 'LP-2', naoh: 0.2, c3s: 0, strength3d: 16.3, strength28d: 36.0, description: '早期强度大幅提升' },
+            'LP-3': { name: 'LP-3', naoh: 0.5, c3s: 0, strength3d: 19.1, strength28d: 38.5, description: '全龄期强度最优' },
+            'LP-4': { name: 'LP-4', naoh: 0.7, c3s: 0, strength3d: 18.6, strength28d: 36.3, description: '早期强度提升，后期增益下降' },
+            'LP-5': { name: 'LP-5', naoh: 1.0, c3s: 0, strength3d: 17.9, strength28d: 30.0, description: '过量碱导致后期强度下降' },
+            'LP-6': { name: 'LP-6', naoh: 0, c3s: 5, strength3d: 13.5, strength28d: 35.6, description: '仅早期强度提升' },
+            'LP-7': { name: 'LP-7', naoh: 0, c3s: 10, strength3d: 13.5, strength28d: 36.4, description: '仅早期强度提升' }
+        };
+
+        const materials = {
+            'iron-tailings': { name: '铁尾矿', baseAmount: 40, surfaceArea: 712, activity: 85 },
+            'slag': { name: '矿渣', baseAmount: 35, surfaceArea: 552, activity: 104 },
+            'steel-slag': { name: '钢渣', baseAmount: 15, surfaceArea: 512, activity: 75 },
+            'gypsum': { name: '脱硫石膏', baseAmount: 10, surfaceArea: 523, activity: 0 },
+            'naoh': { name: 'NaOH', baseAmount: 0, surfaceArea: 0, activity: 0 },
+            'c3s': { name: 'C₃S', baseAmount: 0, surfaceArea: 0, activity: 0 }
+        };
+
+        // ==========================================
+        // 状态指示器更新
+        // ==========================================
+        function updateStatus(status, text) {
+            const indicator = document.getElementById('step-status');
+            indicator.className = 'status-indicator ' + status;
+            indicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-current"></span>${text}`;
+        }
+
+        function updateAnimationStatus(text) {
+            document.getElementById('animation-status').textContent = text;
+        }
+
+        // ==========================================
+        // 步骤切换
+        // ==========================================
+        function switchStep(step) {
+            if (step < 1 || step > 6) return;
+            if (isAnimating) return;
+            
+            currentStep = step;
+            
+            // 更新导航状态
+            document.querySelectorAll('.step-item').forEach((item, index) => {
+                item.classList.remove('active');
+                if (index + 1 < step) {
+                    item.classList.add('completed');
+                } else {
+                    item.classList.remove('completed');
+                }
+                if (index + 1 === step) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // 更新进度条
+            document.getElementById('progress-bar').style.width = (step / 6 * 100) + '%';
+            
+            // 更新步骤名称
+            const stepNames = [
+                '铁尾矿机械活化粉磨',
+                '原材料称量与配料',
+                '胶凝材料混料与浆体制备',
+                '试模浇筑与振捣成型',
+                '标准养护与终止水化',
+                '性能测试与微观表征'
+            ];
+            document.getElementById('current-step-name').textContent = stepNames[step - 1];
+            updateStatus('waiting', '等待操作');
+            updateAnimationStatus('准备就绪 - 等待操作');
+            
+            // 显示对应面板
+            document.querySelectorAll('.step-panel').forEach(panel => {
+                panel.classList.add('hidden');
+            });
+            document.getElementById(`step-${step}-panel`).classList.remove('hidden');
+            
+            // 更新3D场景
+            updateScene(step);
+        }
+
+        // ==========================================
+        // 步骤1: 铁尾矿机械活化粉磨
+        // ==========================================
+        function startGrinding() {
+            if (isAnimating) return;
+            
+            const time = parseInt(document.getElementById('grind-time').value);
+            experimentData.grindTime = time;
+            
+            isAnimating = true;
+            updateStatus('running', '粉磨进行中');
+            updateAnimationStatus(`球磨机运行中 - ${time}分钟粉磨`);
+            document.getElementById('btn-grind').disabled = true;
+            document.getElementById('btn-grind').textContent = '粉磨中...';
+            
+            // 开始球磨机动画
+            startGrindingAnimation();
+            
+            // 模拟粉磨过程
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                updateAnimationStatus(`球磨机运行中 - ${time}分钟粉磨 (${progress}%)`);
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    finishGrinding(time);
+                }
+            }, 50);
+        }
+
+        function finishGrinding(time) {
+            isAnimating = false;
+            stopAnimation();
+            
+            // 计算比表面积和活性指数
+            let surfaceArea, activityIndex, status;
+            
+            if (time <= 100) {
+                surfaceArea = 400 + time * 3.12;
+                activityIndex = 60 + time * 0.25;
+                status = '颗粒逐渐细化';
+            } else {
+                surfaceArea = 712 - (time - 100) * 2;
+                activityIndex = 85 - (time - 100) * 0.15;
+                status = '出现颗粒团聚';
+            }
+            
+            // 显示结果
+            document.getElementById('grind-result').classList.remove('hidden');
+            document.getElementById('grind-data').innerHTML = `
+                <tr>
+                    <td>${time} min</td>
+                    <td>${surfaceArea.toFixed(1)}</td>
+                    <td>${activityIndex.toFixed(1)}%</td>
+                    <td>${status}</td>
+                </tr>
+            `;
+            
+            // 更新记录
+            document.getElementById('record-grind').textContent = time + ' min';
+            
+            // 恢复按钮
+            document.getElementById('btn-grind').disabled = false;
+            document.getElementById('btn-grind').textContent = '重新粉磨';
+            
+            updateStatus('completed', '粉磨完成');
+            updateAnimationStatus(`粉磨完成 - 比表面积: ${surfaceArea.toFixed(1)} m²/kg`);
+            
+            // 显示下一步提示
+            document.getElementById('step-1-next').classList.remove('hidden');
+        }
+
+        function viewMicrostructure() {
+            updateAnimationStatus('微观结构: 100min粉磨后颗粒最细，表面形成非晶态层，活性提升');
+        }
+
+        // ==========================================
+        // 步骤2: 原材料称量与配料
+        // ==========================================
+        function selectTestGroup() {
+            const group = document.getElementById('test-group').value;
+            if (!group) {
+                document.getElementById('formula-details').classList.add('hidden');
+                return;
+            }
+            
+            experimentData.testGroup = group;
+            const groupData = testGroups[group];
+            
+            // 计算配比
+            let slagAmount = 35;
+            let steelSlagAmount = 15;
+            let gypsumAmount = 10;
+            
+            if (groupData.c3s > 0) {
+                const reduction = groupData.c3s / 100 * 60;
+                slagAmount -= reduction * 0.6;
+                steelSlagAmount -= reduction * 0.25;
+                gypsumAmount -= reduction * 0.15;
+            }
+            
+            experimentData.formula = {
+                'iron-tailings': 40,
+                'slag': slagAmount,
+                'steel-slag': steelSlagAmount,
+                'gypsum': gypsumAmount,
+                'naoh': groupData.naoh,
+                'c3s': groupData.c3s
+            };
+            
+            // 显示配比详情
+            let html = '';
+            let totalBinder = 0;
+            
+            for (const [key, amount] of Object.entries(experimentData.formula)) {
+                if (amount > 0) {
+                    const material = materials[key];
+                    const actualAmount = (amount * 4.5).toFixed(1);
+                    html += `
+                        <tr>
+                            <td>${material.name}</td>
+                            <td>${amount.toFixed(1)}%</td>
+                            <td>${actualAmount}g</td>
+                            <td>${material.surfaceArea > 0 ? material.surfaceArea : '-'}</td>
+                        </tr>
+                    `;
+                    if (key !== 'iron-tailings') {
+                        totalBinder += amount;
+                    }
+                }
+            }
+            
+            document.getElementById('formula-data').innerHTML = html;
+            document.getElementById('formula-details').classList.remove('hidden');
+            document.getElementById('selected-group-name').textContent = group + ' - ' + groupData.description;
+            document.getElementById('record-formula').textContent = group;
+            
+            // 隐藏材料信息面板
+            document.getElementById('material-info-panel').classList.add('hidden');
+            
+            // 计算用水量
+            const waterAmount = (totalBinder * 4.5 * 0.5).toFixed(1);
+            document.getElementById('water-amount').value = waterAmount + 'g';
+            
+            updateAnimationStatus(`已选择试验组: ${group} - ${groupData.description}`);
+        }
+
+        function startWeighing() {
+            if (isAnimating) return;
+            
+            isAnimating = true;
+            updateStatus('running', '称量进行中');
+            updateAnimationStatus('电子天平称量中...');
+            document.getElementById('btn-weigh').disabled = true;
+            document.getElementById('btn-weigh').textContent = '称量中...';
+            
+            // 开始称量动画
+            startWeighingAnimation();
+            
+            setTimeout(() => {
+                isAnimating = false;
+                stopAnimation();
+                
+                document.getElementById('btn-weigh').disabled = false;
+                document.getElementById('btn-weigh').textContent = '重新称量';
+                
+                updateStatus('completed', '称量完成');
+                updateAnimationStatus('称量完成 - 所有原材料已准备就绪');
+                
+                // 显示下一步提示
+                document.getElementById('step-2-next').classList.remove('hidden');
+            }, 2000);
+        }
+
+        function viewMaterialInfo() {
+            const panel = document.getElementById('material-info-panel');
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                updateAnimationStatus('显示材料详细信息');
+            } else {
+                panel.classList.add('hidden');
+                updateAnimationStatus('隐藏材料详细信息');
+            }
+        }
+
+        // ==========================================
+        // 步骤3: 胶凝材料混料与浆体制备
+        // ==========================================
+        function startMixing() {
+            if (isAnimating) return;
+            
+            isAnimating = true;
+            updateStatus('running', '搅拌进行中');
+            updateAnimationStatus('搅拌机运行: 干料混合30s → 加水搅拌90s → 停拌90s → 再搅拌60s');
+            document.getElementById('btn-mix').disabled = true;
+            document.getElementById('btn-mix').textContent = '搅拌中...';
+            
+            // 开始搅拌动画
+            startMixingAnimation();
+            
+            let stage = 0;
+            const stages = ['干料混合中...', '加水搅拌中...', '停拌中...', '最终搅拌中...'];
+            
+            const interval = setInterval(() => {
+                stage++;
+                if (stage < stages.length) {
+                    updateAnimationStatus(`搅拌机运行: ${stages[stage]}`);
+                }
+                
+                if (stage >= 4) {
+                    clearInterval(interval);
+                    finishMixing();
+                }
+            }, 800);
+        }
+
+        function finishMixing() {
+            isAnimating = false;
+            stopAnimation();
+            
+            document.getElementById('btn-mix').disabled = false;
+            document.getElementById('btn-mix').textContent = '重新搅拌';
+            
+            updateStatus('completed', '搅拌完成');
+            updateAnimationStatus('浆体制备完成 - 水胶比0.5，浆体均匀无结块');
+            
+            // 显示下一步提示
+            document.getElementById('step-3-next').classList.remove('hidden');
+        }
+
+        function viewHydration() {
+            updateAnimationStatus('早期水化: OH⁻攻击Si-O、Al-O键，解聚反应生成AFt和C-S-H凝胶');
+        }
+
+        // ==========================================
+        // 步骤4: 试模浇筑与振捣成型
+        // ==========================================
+        function pourSlurry() {
+            if (isAnimating) return;
+            
+            isAnimating = true;
+            updateStatus('running', '浇筑进行中');
+            updateAnimationStatus('浆体浇筑: 分两层浇筑，每层约80mm');
+            document.getElementById('btn-pour').disabled = true;
+            document.getElementById('btn-pour').textContent = '浇筑中...';
+            
+            // 浇筑动画
+            startPouringAnimation();
+            
+            setTimeout(() => {
+                isAnimating = false;
+                stopAnimation();
+                
+                document.getElementById('btn-pour').disabled = false;
+                document.getElementById('btn-pour').textContent = '重新浇筑';
+                
+                updateStatus('completed', '浇筑完成');
+                updateAnimationStatus('浇筑完成 - 浆体填充试模');
+            }, 1500);
+        }
+
+        function startVibration() {
+            if (isAnimating) return;
+            
+            isAnimating = true;
+            updateStatus('running', '振捣进行中');
+            updateAnimationStatus('振动台运行: 频率50Hz，振幅0.5mm，振捣时间60s');
+            document.getElementById('btn-vibrate').disabled = true;
+            document.getElementById('btn-vibrate').textContent = '振捣中...';
+            
+            // 振捣动画
+            startVibrationAnimation();
+            
+            setTimeout(() => {
+                isAnimating = false;
+                stopAnimation();
+                
+                document.getElementById('btn-vibrate').disabled = false;
+                document.getElementById('btn-vibrate').textContent = '重新振捣';
+                
+                updateStatus('completed', '振捣完成');
+                updateAnimationStatus('振捣完成 - 试块密实，表面刮平，气泡排出');
+                
+                // 显示下一步提示
+                document.getElementById('step-4-next').classList.remove('hidden');
+            }, 2000);
+        }
+
+        // ==========================================
+        // 步骤5: 标准养护与终止水化
+        // ==========================================
+        function startCuring() {
+            if (isAnimating) return;
+            
+            const age = parseInt(document.getElementById('curing-age').value);
+            experimentData.curingAge = age;
+            document.getElementById('record-age').textContent = age + '天';
+            
+            isAnimating = true;
+            updateStatus('running', '养护进行中');
+            updateAnimationStatus(`养护箱运行: 温度20±2°C，湿度≥95%，养护龄期${age}天`);
+            document.getElementById('btn-cure').disabled = true;
+            document.getElementById('btn-cure').textContent = '养护中...';
+            
+            // 养护动画
+            startCuringAnimation();
+            
+            // 模拟养护时间流逝
+            let day = 0;
+            const interval = setInterval(() => {
+                day += 1;
+                updateAnimationStatus(`养护进行中: 第${day}天 / 共${age}天`);
+                
+                if (day >= age) {
+                    clearInterval(interval);
+                    finishCuring(age);
+                }
+            }, 100);
+        }
+
+        function finishCuring(age) {
+            isAnimating = false;
+            stopAnimation();
+            
+            document.getElementById('btn-cure').disabled = false;
+            document.getElementById('btn-cure').textContent = '重新养护';
+            
+            updateStatus('completed', '养护完成');
+            updateAnimationStatus(`养护完成 - ${age}天强度发展符合预期`);
+        }
+
+        function stopHydration() {
+            updateStatus('completed', '水化已终止');
+            updateAnimationStatus('终止水化: 试块浸入无水乙醇，阻止水化反应继续进行');
+            
+            // 显示下一步提示
+            document.getElementById('step-5-next').classList.remove('hidden');
+        }
+
+        // ==========================================
+        // 步骤6: 性能测试与微观表征
+        // ==========================================
+        function testStrength() {
+            const group = experimentData.testGroup;
+            if (!group) {
+                updateAnimationStatus('错误: 请先选择试验组');
+                return;
+            }
+            
+            if (isAnimating) return;
+            
+            isAnimating = true;
+            updateStatus('running', '强度测试中');
+            updateAnimationStatus('万能压力试验机运行: 加载速率2.4kN/s，测试抗压强度');
+            document.getElementById('btn-strength').disabled = true;
+            document.getElementById('btn-strength').textContent = '测试中...';
+            
+            // 强度测试动画
+            startStrengthTestAnimation();
+            
+            const groupData = testGroups[group];
+            const age = experimentData.curingAge || 28;
+            
+            // 根据龄期计算强度
+            let strength;
+            if (age <= 3) {
+                strength = groupData.strength3d;
+            } else if (age < 28) {
+                const ratio = (age - 3) / 25;
+                strength = groupData.strength3d + (groupData.strength28d - groupData.strength3d) * ratio;
+            } else {
+                strength = groupData.strength28d;
+            }
+            
+            experimentData.strength = strength;
+            
+            setTimeout(() => {
+                isAnimating = false;
+                stopAnimation();
+                
+                document.getElementById('btn-strength').disabled = false;
+                document.getElementById('btn-strength').textContent = '重新测试';
+                
+                updateStatus('completed', '测试完成');
+                updateAnimationStatus(`抗压强度测试完成: ${strength.toFixed(1)} MPa`);
+                
+                // 显示结果
+                document.getElementById('test-results').classList.remove('hidden');
+                document.getElementById('test-data').innerHTML = `
+                    <tr>
+                        <td>抗压强度 (${age}d)</td>
+                        <td class="font-bold text-primary">${strength.toFixed(1)} MPa</td>
+                        <td>≥${(strength * 0.9).toFixed(1)} MPa</td>
+                        <td class="text-green-600 font-bold">合格</td>
+                    </tr>
+                    <tr>
+                        <td>抗折强度 (${age}d)</td>
+                        <td>${(strength * 0.15).toFixed(1)} MPa</td>
+                        <td>≥${(strength * 0.12).toFixed(1)} MPa</td>
+                        <td class="text-green-600">合格</td>
+                    </tr>
+                `;
+                
+                // 显示完成提示
+                document.getElementById('step-6-complete').classList.remove('hidden');
+            }, 2500);
+        }
+
+        function viewXRD() {
+            updateAnimationStatus('XRD分析: 检测到钙矾石AFt、C-S-H凝胶、Ca(OH)₂特征峰');
+        }
+
+        function viewSEM() {
+            updateAnimationStatus('SEM观察: 针棒状AFt晶体交叉搭接，C-S-H凝胶填充孔隙');
+        }
+
+        // ==========================================
+        // 实验报告
+        // ==========================================
+        function generateReport() {
+            const group = experimentData.testGroup || '未选择';
+            const groupData = group !== '未选择' ? testGroups[group] : null;
+            
+            const reportHTML = `
+                <div class="space-y-6">
+                    <div class="border-b pb-4">
+                        <h3 class="font-bold text-lg mb-2">实验基本信息</h3>
+                        <p><strong>实验名称：</strong>高掺量铁尾矿基全固废胶凝材料制备及水化机理</p>
+                        <p><strong>试验组：</strong>${group}</p>
+                        <p><strong>粉磨时间：</strong>${experimentData.grindTime || '未设置'} min</p>
+                        <p><strong>养护龄期：</strong>${experimentData.curingAge || '未设置'} 天</p>
+                    </div>
+                    
+                    <div class="border-b pb-4">
+                        <h3 class="font-bold text-lg mb-2">配比方案</h3>
+                        ${groupData ? `
+                            <p>铁尾矿：40%</p>
+                            <p>矿渣+钢渣+石膏：${groupData.c3s > 0 ? (60 - groupData.c3s * 0.6).toFixed(1) : 60}%</p>
+                            <p>NaOH：${groupData.naoh}%</p>
+                            <p>C₃S：${groupData.c3s}%</p>
+                        ` : '<p class="text-gray-500">未选择试验组</p>'}
+                    </div>
+                    
+                    <div class="border-b pb-4">
+                        <h3 class="font-bold text-lg mb-2">强度测试结果</h3>
+                        ${experimentData.strength ? `
+                            <p>3天抗压强度：${groupData.strength3d} MPa</p>
+                            <p>28天抗压强度：${groupData.strength28d} MPa</p>
+                            <p>3天强度提升率：${((groupData.strength3d / 8.8 - 1) * 100).toFixed(1)}%</p>
+                            <p>28天强度提升率：${((groupData.strength28d / 35.3 - 1) * 100).toFixed(1)}%</p>
+                        ` : '<p class="text-gray-500">未完成强度测试</p>'}
+                    </div>
+                    
+                    <div>
+                        <h3 class="font-bold text-lg mb-2">结论</h3>
+                        <p>${groupData ? groupData.description : '请完成实验后查看结论'}</p>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('report-content').innerHTML = reportHTML;
+            document.getElementById('report-modal').classList.remove('hidden');
+        }
+
+        function closeReport() {
+            document.getElementById('report-modal').classList.add('hidden');
+        }
+
+        function exportReport() {
+            updateAnimationStatus('报告导出功能开发中...');
+        }
+
+        // ==========================================
+        // 3D场景和动画管理
+        // ==========================================
+        let scene, camera, renderer, animationObjects = [];
+
+        function initThreeJS() {
+            const container = document.getElementById('visualization-area');
+            const canvas = document.getElementById('three-canvas');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a2e);
+            scene.fog = new THREE.Fog(0x1a1a2e, 5, 15);
+            
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 2, 6);
+            camera.lookAt(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            // 添加灯光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+            scene.add(directionalLight);
+            
+            const pointLight = new THREE.PointLight(0x4A90E2, 0.5);
+            pointLight.position.set(-5, 5, -5);
+            scene.add(pointLight);
+            
+            // 初始场景
+            createGrindingScene();
+            
+            // 隐藏加载文字
+            document.getElementById('animation-status').textContent = '准备就绪 - 等待操作';
+            
+            animate();
+        }
+
+        function clearScene() {
+            // 清除所有动态对象
+            animationObjects.forEach(obj => {
+                scene.remove(obj);
+            });
+            animationObjects = [];
+            
+            // 保留灯光
+            const lights = [];
+            scene.traverse(child => {
+                if (child.isLight) {
+                    lights.push(child);
+                }
+            });
+            
+            while(scene.children.length > 0) {
+                scene.remove(scene.children[0]);
+            }
+            
+            lights.forEach(light => scene.add(light));
+        }
+
+        // 步骤1: 球磨机场景
+        function createGrindingScene() {
+            clearScene();
+            
+            // 创建球磨机筒体（带端盖，防止穿帮）
+            const drumGroup = new THREE.Group();
+            
+            // 筒体
+            const cylinderGeometry = new THREE.CylinderGeometry(1.2, 1.2, 4, 32);
+            const cylinderMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x666666,
+                transparent: true,
+                opacity: 0.4,
+                side: THREE.DoubleSide
+            });
+            const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+            cylinder.rotation.z = Math.PI / 2;
+            cylinder.castShadow = true;
+            drumGroup.add(cylinder);
+            
+            // 左端盖
+            const endCapGeometry = new THREE.CylinderGeometry(1.2, 1.2, 0.1, 32);
+            const endCapMaterial = new THREE.MeshPhongMaterial({ color: 0x444444 });
+            const leftCap = new THREE.Mesh(endCapGeometry, endCapMaterial);
+            leftCap.rotation.z = Math.PI / 2;
+            leftCap.position.x = -2;
+            drumGroup.add(leftCap);
+            
+            // 右端盖
+            const rightCap = new THREE.Mesh(endCapGeometry, endCapMaterial);
+            rightCap.rotation.z = Math.PI / 2;
+            rightCap.position.x = 2;
+            drumGroup.add(rightCap);
+            
+            // 支架
+            const standGeometry = new THREE.BoxGeometry(0.3, 2, 0.3);
+            const standMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+            const leftStand = new THREE.Mesh(standGeometry, standMaterial);
+            leftStand.position.set(-2, -1.5, 0);
+            drumGroup.add(leftStand);
+            const rightStand = new THREE.Mesh(standGeometry, standMaterial);
+            rightStand.position.set(2, -1.5, 0);
+            drumGroup.add(rightStand);
+            
+            scene.add(drumGroup);
+            animationObjects.push(drumGroup);
+            
+            // 创建钢球
+            for (let i = 0; i < 25; i++) {
+                const ballGeometry = new THREE.SphereGeometry(0.12 + Math.random() * 0.08, 16, 16);
+                const ballMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x333333,
+                    shininess: 100
+                });
+                const ball = new THREE.Mesh(ballGeometry, ballMaterial);
+                
+                // 限制在筒体内
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 0.9;
+                ball.position.set(
+                    (Math.random() - 0.5) * 3.5,
+                    Math.sin(angle) * radius,
+                    Math.cos(angle) * radius
+                );
+                ball.castShadow = true;
+                scene.add(ball);
+                animationObjects.push(ball);
+                
+                // 存储初始位置用于动画
+                ball.userData = {
+                    initialPos: ball.position.clone(),
+                    speed: 0.5 + Math.random() * 0.5,
+                    phase: Math.random() * Math.PI * 2
+                };
+            }
+            
+            // 创建铁尾矿颗粒
+            for (let i = 0; i < 60; i++) {
+                const particleGeometry = new THREE.SphereGeometry(0.04 + Math.random() * 0.04, 8, 8);
+                const particleMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x8B4513,
+                    roughness: 0.8
+                });
+                const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+                
+                const angle = Math.random() * Math.PI * 2;
+                const radius = Math.random() * 0.8;
+                particle.position.set(
+                    (Math.random() - 0.5) * 3.5,
+                    Math.sin(angle) * radius,
+                    Math.cos(angle) * radius
+                );
+                particle.castShadow = true;
+                scene.add(particle);
+                animationObjects.push(particle);
+                
+                particle.userData = {
+                    initialPos: particle.position.clone(),
+                    speed: 0.3 + Math.random() * 0.3,
+                    phase: Math.random() * Math.PI * 2
+                };
+            }
+        }
+
+        function startGrindingAnimation() {
+            animationId = 'grinding';
+        }
+
+        // 步骤2: 天平称量场景
+        function createWeighingScene() {
+            clearScene();
+            
+            // 实验台桌面
+            const tableGeometry = new THREE.BoxGeometry(10, 0.2, 6);
+            const tableMaterial = new THREE.MeshPhongMaterial({ color: 0x1a1a1a });
+            const table = new THREE.Mesh(tableGeometry, tableMaterial);
+            table.position.y = -0.1;
+            table.receiveShadow = true;
+            scene.add(table);
+            animationObjects.push(table);
+            
+            // 天平机身
+            const balanceGeometry = new THREE.BoxGeometry(3, 0.6, 2.5);
+            const balanceMaterial = new THREE.MeshPhongMaterial({ color: 0xf5f5f5 });
+            const balance = new THREE.Mesh(balanceGeometry, balanceMaterial);
+            balance.position.y = 0.3;
+            balance.castShadow = true;
+            scene.add(balance);
+            animationObjects.push(balance);
+            
+            // 天平显示屏
+            const displayGeometry = new THREE.PlaneGeometry(1.5, 0.6);
+            const displayCanvas = document.createElement('canvas');
+            displayCanvas.width = 256;
+            displayCanvas.height = 128;
+            const ctx = displayCanvas.getContext('2d');
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, 256, 128);
+            ctx.fillStyle = '#00ff00';
+            ctx.font = 'bold 48px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('1000.0000', 128, 64);
+            const displayTexture = new THREE.CanvasTexture(displayCanvas);
+            const displayMaterial = new THREE.MeshBasicMaterial({ map: displayTexture });
+            const display = new THREE.Mesh(displayGeometry, displayMaterial);
+            display.position.set(0, 0.61, 1.26);
+            scene.add(display);
+            animationObjects.push(display);
+            
+            // 称量盘
+            const panGeometry = new THREE.CylinderGeometry(1.2, 1.2, 0.05, 32);
+            const panMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xc0c0c0,
+                shininess: 100
+            });
+            const pan = new THREE.Mesh(panGeometry, panMaterial);
+            pan.position.y = 0.65;
+            pan.receiveShadow = true;
+            scene.add(pan);
+            animationObjects.push(pan);
+            
+            // 四个杯子放在天平上
+            const cupPositions = [
+                { x: -0.6, z: -0.6 },
+                { x: 0.6, z: -0.6 },
+                { x: -0.6, z: 0.6 },
+                { x: 0.6, z: 0.6 }
+            ];
+            
+            const materials = [
+                { name: '铁尾矿', color: 0x8B7355 },
+                { name: '矿渣', color: 0xC0C0C0 },
+                { name: '钢渣', color: 0x4A4A4A },
+                { name: '脱硫石膏', color: 0xF5F5DC }
+            ];
+            
+            cupPositions.forEach((pos, index) => {
+                const cupGroup = new THREE.Group();
+                
+                // 烧杯主体
+                const glassGeometry = new THREE.CylinderGeometry(0.35, 0.3, 0.8, 32);
+                const glassMaterial = new THREE.MeshPhysicalMaterial({
+                    color: 0xffffff,
+                    transparent: true,
+                    opacity: 0.3,
+                    roughness: 0.1,
+                    transmission: 0.9
+                });
+                const glass = new THREE.Mesh(glassGeometry, glassMaterial);
+                glass.position.y = 0.4;
+                glass.castShadow = true;
+                cupGroup.add(glass);
+                
+                // 粉体
+                const powderGeometry = new THREE.CylinderGeometry(0.28, 0.28, 0.5, 32);
+                const powderMaterial = new THREE.MeshStandardMaterial({
+                    color: materials[index].color,
+                    roughness: 0.9
+                });
+                const powder = new THREE.Mesh(powderGeometry, powderMaterial);
+                powder.position.y = 0.25;
+                cupGroup.add(powder);
+                
+                cupGroup.position.set(pos.x, 0.68, pos.z);
+                scene.add(cupGroup);
+                animationObjects.push(cupGroup);
+            });
+        }
+
+        function startWeighingAnimation() {
+            animationId = 'weighing';
+            let time = 0;
+            
+            // 找到称量盘
+            const plate = animationObjects.find(obj => 
+                obj.geometry && obj.geometry.type === 'CylinderGeometry' && 
+                obj.position.y === -0.5 && !obj.userData.isBeaker
+            );
+            
+            // 找到所有材料（排除烧杯）
+            const materials = animationObjects.filter(obj => 
+                obj.userData && obj.userData.isMaterial
+            );
+            
+            // 记录初始位置
+            const initialPlateY = plate ? plate.position.y : -0.5;
+            const materialInitialPositions = materials.map(m => ({
+                y: m.position.y,
+                obj: m
+            }));
+            
+            const animate = () => {
+                if (animationId !== 'weighing') return;
+                
+                time += 0.03;
+                
+                // 称量盘轻微下沉（模拟称重）
+                if (plate) {
+                    const sinkAmount = Math.min(time * 0.05, 0.08);
+                    plate.position.y = initialPlateY - sinkAmount * Math.sin(Math.min(time * 2, Math.PI / 2));
+                }
+                
+                // 材料不跟随称量盘移动（杯子放在桌面上，不是放在称量盘上）
+                // 只添加非常轻微的稳定振动（模拟环境振动）
+                materials.forEach((matData, index) => {
+                    const stabilizeVibration = Math.sin(time * 8) * 0.0005 * Math.max(0, 1 - time / 2);
+                    matData.obj.position.y = matData.y + stabilizeVibration;
+                });
+                
+                // 2秒后停止动画
+                if (time > 2) {
+                    stopAnimation();
+                    // 恢复到稳定位置
+                    if (plate) plate.position.y = initialPlateY - 0.03;
+                    materials.forEach(matData => {
+                        matData.obj.position.y = matData.y;
+                    });
+                    return;
+                }
+                
+                requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        // 步骤3: 搅拌场景
+        function createMixingScene() {
+            clearScene();
+            
+            // 搅拌锅
+            const bowlGeometry = new THREE.CylinderGeometry(1.2, 1, 1.2, 32, 1, true);
+            const bowlMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xcccccc,
+                side: THREE.DoubleSide,
+                shininess: 80
+            });
+            const bowl = new THREE.Mesh(bowlGeometry, bowlMaterial);
+            bowl.position.y = -0.2;
+            bowl.castShadow = true;
+            scene.add(bowl);
+            animationObjects.push(bowl);
+            
+            // 锅底
+            const bottomGeometry = new THREE.CircleGeometry(1, 32);
+            const bottomMaterial = new THREE.MeshPhongMaterial({ color: 0xbbbbbb });
+            const bottom = new THREE.Mesh(bottomGeometry, bottomMaterial);
+            bottom.rotation.x = -Math.PI / 2;
+            bottom.position.y = -0.8;
+            scene.add(bottom);
+            animationObjects.push(bottom);
+            
+            // 搅拌桨
+            const bladeGroup = new THREE.Group();
+            
+            const shaftGeometry = new THREE.CylinderGeometry(0.05, 0.05, 1.5, 8);
+            const shaftMaterial = new THREE.MeshPhongMaterial({ color: 0x444444 });
+            const shaft = new THREE.Mesh(shaftGeometry, shaftMaterial);
+            shaft.position.y = 0.5;
+            bladeGroup.add(shaft);
+            
+            const bladeGeometry = new THREE.BoxGeometry(1.8, 0.08, 0.3);
+            const bladeMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+            const blade = new THREE.Mesh(bladeGeometry, bladeMaterial);
+            blade.position.y = -0.2;
+            bladeGroup.add(blade);
+            
+            bladeGroup.position.y = 0.3;
+            scene.add(bladeGroup);
+            animationObjects.push(bladeGroup);
+            
+            // 浆体
+            const slurryGeometry = new THREE.CylinderGeometry(1.05, 0.9, 0.7, 32);
+            const slurryMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x8B7355,
+                transparent: true,
+                opacity: 0.85,
+                roughness: 0.6
+            });
+            const slurry = new THREE.Mesh(slurryGeometry, slurryMaterial);
+            slurry.position.y = -0.45;
+            scene.add(slurry);
+            animationObjects.push(slurry);
+            
+            // 存储引用
+            scene.userData.blade = bladeGroup;
+            scene.userData.slurry = slurry;
+        }
+
+        function startMixingAnimation() {
+            animationId = 'mixing';
+            let time = 0;
+            const blade = scene.userData.blade;
+            const slurry = scene.userData.slurry;
+            
+            const animate = () => {
+                if (animationId !== 'mixing' || !blade) return;
+                
+                time += 0.1;
+                // 搅拌桨旋转（行星式运动）
+                blade.rotation.y = time;
+                blade.position.x = Math.sin(time * 0.5) * 0.2;
+                blade.position.z = Math.cos(time * 0.5) * 0.2;
+                
+                // 浆体轻微波动
+                animationObjects.forEach(obj => {
+                    if (obj.material && obj.material.opacity === 0.85) {
+                        obj.scale.y = 1 + Math.sin(time * 2) * 0.02;
+                    }
+                });
+                
+                // 浆体颜色变化：干料混合(棕灰) → 加水搅拌(变深) → 水化反应(变绿灰) → 完成(灰绿)
+                if (slurry && slurry.material) {
+                    const stage = Math.floor(time / 10) % 4;
+                    const colors = [
+                        0x8B7355, // 干料混合：棕灰色
+                        0x6B5345, // 加水搅拌：深棕色
+                        0x5B6355, // 水化反应：绿灰色
+                        0x4A5A50  // 完成：灰绿色
+                    ];
+                    slurry.material.color.setHex(colors[stage]);
+                }
+                
+                requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        // 步骤4: 浇筑振捣场景
+        function createMoldingScene() {
+            clearScene();
+            
+            // 试模外框
+            const moldGroup = new THREE.Group();
+            
+            // 试模壁
+            const wallThickness = 0.05;
+            const moldWidth = 2;
+            const moldHeight = 0.8;
+            const moldDepth = 0.6;
+            
+            const wallMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x888888,
+                transparent: true,
+                opacity: 0.6
+            });
+            
+            // 前壁
+            const frontWall = new THREE.Mesh(
+                new THREE.BoxGeometry(moldWidth, moldHeight, wallThickness),
+                wallMaterial
+            );
+            frontWall.position.z = moldDepth / 2;
+            moldGroup.add(frontWall);
+            
+            // 后壁
+            const backWall = new THREE.Mesh(
+                new THREE.BoxGeometry(moldWidth, moldHeight, wallThickness),
+                wallMaterial
+            );
+            backWall.position.z = -moldDepth / 2;
+            moldGroup.add(backWall);
+            
+            // 左壁
+            const leftWall = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, moldHeight, moldDepth),
+                wallMaterial
+            );
+            leftWall.position.x = -moldWidth / 2;
+            moldGroup.add(leftWall);
+            
+            // 右壁
+            const rightWall = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, moldHeight, moldDepth),
+                wallMaterial
+            );
+            rightWall.position.x = moldWidth / 2;
+            moldGroup.add(rightWall);
+            
+            // 底板
+            const basePlate = new THREE.Mesh(
+                new THREE.BoxGeometry(moldWidth, wallThickness, moldDepth),
+                new THREE.MeshPhongMaterial({ color: 0x666666 })
+            );
+            basePlate.position.y = -moldHeight / 2;
+            moldGroup.add(basePlate);
+            
+            scene.add(moldGroup);
+            animationObjects.push(moldGroup);
+            
+            // 浆体（初始较低）
+            const slurryGeometry = new THREE.BoxGeometry(moldWidth - 0.15, 0.1, moldDepth - 0.15);
+            const slurryMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x8B7355,
+                transparent: true,
+                opacity: 0.9
+            });
+            const slurry = new THREE.Mesh(slurryGeometry, slurryMaterial);
+            slurry.position.y = -0.3;
+            scene.add(slurry);
+            animationObjects.push(slurry);
+            
+            scene.userData.slurry = slurry;
+            scene.userData.mold = moldGroup;
+        }
+
+        function startPouringAnimation() {
+            animationId = 'pouring';
+            const slurry = scene.userData.slurry;
+            if (!slurry) return;
+            
+            let height = 0.1;
+            const targetHeight = 0.7;
+            
+            const animate = () => {
+                if (animationId !== 'pouring') return;
+                
+                if (height < targetHeight) {
+                    height += 0.015;
+                    slurry.scale.y = height / 0.1;
+                    slurry.position.y = -0.35 + height / 2;
+                    requestAnimationFrame(animate);
+                }
+            };
+            animate();
+        }
+
+        function startVibrationAnimation() {
+            animationId = 'vibration';
+            const mold = scene.userData.mold;
+            const slurry = scene.userData.slurry;
+            let time = 0;
+            
+            const animate = () => {
+                if (animationId !== 'vibration') return;
+                
+                time += 0.5;
+                const vibrationX = Math.sin(time * 20) * 0.02;
+                const vibrationY = Math.cos(time * 25) * 0.015;
+                
+                if (mold) {
+                    mold.position.x = vibrationX;
+                    mold.position.y = vibrationY;
+                }
+                if (slurry) {
+                    slurry.position.x = vibrationX * 0.8;
+                    // 浆体表面波动
+                    slurry.scale.x = 1 + Math.sin(time * 10) * 0.01;
+                    slurry.scale.z = 1 + Math.cos(time * 10) * 0.01;
+                }
+                
+                requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        // 步骤5: 养护场景
+        function createCuringScene() {
+            clearScene();
+            
+            // 养护箱
+            const boxGeometry = new THREE.BoxGeometry(3.5, 2.2, 2.5);
+            const boxMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xdddddd,
+                transparent: true,
+                opacity: 0.25,
+                side: THREE.DoubleSide
+            });
+            const box = new THREE.Mesh(boxGeometry, boxMaterial);
+            scene.add(box);
+            animationObjects.push(box);
+            
+            // 试块托盘
+            const trayGeometry = new THREE.BoxGeometry(3, 0.1, 2);
+            const trayMaterial = new THREE.MeshPhongMaterial({ color: 0x666666 });
+            const tray = new THREE.Mesh(trayGeometry, trayMaterial);
+            tray.position.y = -0.8;
+            scene.add(tray);
+            animationObjects.push(tray);
+            
+            // 试块
+            const blocks = [];
+            for (let i = 0; i < 3; i++) {
+                const blockGeometry = new THREE.BoxGeometry(0.5, 0.5, 1.8);
+                const blockMaterial = new THREE.MeshPhongMaterial({ 
+                    color: 0x8B7355,
+                    roughness: 0.7
+                });
+                const block = new THREE.Mesh(blockGeometry, blockMaterial);
+                block.position.set((i - 1) * 0.8, -0.3, 0);
+                block.castShadow = true;
+                scene.add(block);
+                animationObjects.push(block);
+                blocks.push(block);
+            }
+            scene.userData.blocks = blocks;
+            
+            // 水雾粒子
+            const particleCount = 150;
+            const particles = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 3.2;
+                positions[i + 1] = (Math.random() - 0.5) * 1.8;
+                positions[i + 2] = (Math.random() - 0.5) * 2.2;
+            }
+            
+            particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const particleMaterial = new THREE.PointsMaterial({ 
+                color: 0xaaddff,
+                size: 0.04,
+                transparent: true,
+                opacity: 0.4
+            });
+            const particleSystem = new THREE.Points(particles, particleMaterial);
+            scene.add(particleSystem);
+            animationObjects.push(particleSystem);
+            
+            scene.userData.particles = particleSystem;
+        }
+
+        function startCuringAnimation() {
+            animationId = 'curing';
+            const particles = scene.userData.particles;
+            const blocks = scene.userData.blocks;
+            const age = parseInt(document.getElementById('curing-age').value);
+            
+            if (!particles || !blocks) return;
+            
+            const positions = particles.geometry.attributes.position.array;
+            
+            // 不同养护天数对应不同颜色
+            const ageColors = {
+                1: 0x9B8365,  // 1天：浅棕色（初期水化）
+                3: 0x7B7355,  // 3天：棕灰色（水化进行中）
+                7: 0x6B6355,  // 7天：深棕灰（水化较充分）
+                28: 0x5B6350  // 28天：灰绿色（水化充分）
+            };
+            
+            const targetColor = new THREE.Color(ageColors[age] || 0x5B6350);
+            const startColor = new THREE.Color(0x8B7355);
+            
+            let progress = 0;
+            
+            const animate = () => {
+                if (animationId !== 'curing') return;
+                
+                // 水雾粒子动画
+                for (let i = 1; i < positions.length; i += 3) {
+                    positions[i] += 0.005;
+                    if (positions[i] > 1) {
+                        positions[i] = -1;
+                    }
+                }
+                particles.geometry.attributes.position.needsUpdate = true;
+                
+                // 试块颜色渐变
+                progress += 0.01;
+                if (progress <= 1) {
+                    const currentColor = startColor.clone().lerp(targetColor, progress);
+                    blocks.forEach(block => {
+                        if (block.material) {
+                            block.material.color.copy(currentColor);
+                        }
+                    });
+                }
+                
+                requestAnimationFrame(animate);
+            };
+            animate();
+        }
+
+        // 步骤6: 强度测试场景
+        function createTestingScene() {
+            clearScene();
+            
+            // 压力机框架
+            const frameMaterial = new THREE.MeshPhongMaterial({ color: 0x444444 });
+            
+            // 左立柱
+            const leftPillar = new THREE.Mesh(
+                new THREE.BoxGeometry(0.25, 4, 0.25),
+                frameMaterial
+            );
+            leftPillar.position.set(-1.2, 0, 0);
+            leftPillar.castShadow = true;
+            scene.add(leftPillar);
+            animationObjects.push(leftPillar);
+            
+            // 右立柱
+            const rightPillar = new THREE.Mesh(
+                new THREE.BoxGeometry(0.25, 4, 0.25),
+                frameMaterial
+            );
+            rightPillar.position.set(1.2, 0, 0);
+            rightPillar.castShadow = true;
+            scene.add(rightPillar);
+            animationObjects.push(rightPillar);
+            
+            // 顶梁
+            const topBeam = new THREE.Mesh(
+                new THREE.BoxGeometry(3, 0.3, 0.8),
+                frameMaterial
+            );
+            topBeam.position.y = 2;
+            scene.add(topBeam);
+            animationObjects.push(topBeam);
+            
+            // 压头
+            const headGeometry = new THREE.BoxGeometry(1.2, 0.2, 1.2);
+            const headMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x666666,
+                shininess: 60
+            });
+            const head = new THREE.Mesh(headGeometry, headMaterial);
+            head.position.y = 1.2;
+            head.castShadow = true;
+            scene.add(head);
+            animationObjects.push(head);
+            
+            // 试块
+            const blockGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const blockMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0x8B7355,
+                roughness: 0.8
+            });
+            const block = new THREE.Mesh(blockGeometry, blockMaterial);
+            block.position.y = -0.5;
+            block.castShadow = true;
+            scene.add(block);
+            animationObjects.push(block);
+            
+            // 底座
+            const baseGeometry = new THREE.BoxGeometry(2.5, 0.4, 2);
+            const baseMaterial = new THREE.MeshPhongMaterial({ color: 0x333333 });
+            const base = new THREE.Mesh(baseGeometry, baseMaterial);
+            base.position.y = -1.2;
+            base.receiveShadow = true;
+            scene.add(base);
+            animationObjects.push(base);
+            
+            scene.userData.head = head;
+            scene.userData.block = block;
+        }
+
+        function startStrengthTestAnimation() {
+            animationId = 'strength-test';
+            const head = scene.userData.head;
+            const block = scene.userData.block;
+            if (!head || !block) return;
+            
+            let phase = 0;
+            const startY = 1.2;
+            const endY = -0.2;
+            
+            const animate = () => {
+                if (animationId !== 'strength-test') return;
+                
+                phase += 0.015;
+                
+                if (phase <= 1) {
+                    // 压头下降
+                    head.position.y = startY + (endY - startY) * phase;
+                } else if (phase <= 1.3) {
+                    // 保压
+                    head.position.y = endY;
+                } else if (phase <= 1.5) {
+                    // 试块破裂效果
+                    block.scale.y = 1 - (phase - 1.3) * 3;
+                    block.position.y = -0.5 - (phase - 1.3) * 0.3;
+                }
+                
+                if (phase < 1.5) {
+                    requestAnimationFrame(animate);
+                }
+            };
+            animate();
+        }
+
+        function stopAnimation() {
+            animationId = null;
+            
+            // 重置对象位置
+            animationObjects.forEach(obj => {
+                if (obj.userData && obj.userData.initialPos) {
+                    obj.position.copy(obj.userData.initialPos);
+                }
+            });
+        }
+
+        function updateScene(step) {
+            if (!scene) return;
+            
+            stopAnimation();
+            
+            switch(step) {
+                case 1:
+                    createGrindingScene();
+                    break;
+                case 2:
+                    createWeighingScene();
+                    break;
+                case 3:
+                    createMixingScene();
+                    break;
+                case 4:
+                    createMoldingScene();
+                    break;
+                case 5:
+                    createCuringScene();
+                    break;
+                case 6:
+                    createTestingScene();
+                    break;
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // 默认旋转动画
+            if (!animationId && scene) {
+                scene.rotation.y += 0.002;
+            }
+            
+            // 球磨机旋转动画
+            if (animationId === 'grinding') {
+                animationObjects.forEach((obj, index) => {
+                    if (obj.userData && obj.userData.speed) {
+                        const time = Date.now() * 0.001;
+                        const speed = obj.userData.speed;
+                        const phase = obj.userData.phase;
+                        
+                        // 模拟筒体内物体翻滚
+                        obj.position.y = obj.userData.initialPos.y + Math.sin(time * speed + phase) * 0.3;
+                        obj.position.z = obj.userData.initialPos.z + Math.cos(time * speed + phase) * 0.3;
+                        obj.rotation.x += 0.05;
+                        obj.rotation.z += 0.03;
+                    }
+                });
+                
+                // 整个场景轻微晃动模拟振动
+                scene.rotation.z = Math.sin(Date.now() * 0.01) * 0.02;
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // ==========================================
+        // 初始化
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initThreeJS();
+            
+            // 响应式处理
+            window.addEventListener('resize', function() {
+                const container = document.getElementById('visualization-area');
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        });
+    </script>
+</body>
+</html>
